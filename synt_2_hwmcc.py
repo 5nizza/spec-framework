@@ -59,6 +59,8 @@ import aiger_swig.aiger_wrap as aiglib
 
 
 def _write_result(model):
+    # aiglib.aiger_reencode(model)  # ic3-ref needs (?) 'right' order of indices of ANDs, etc.
+
     res, string = aiglib.aiger_write_to_string(model, aiglib.aiger_ascii_mode, 268435456)
     assert res != 0, 'writing failure'
 

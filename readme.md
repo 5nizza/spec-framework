@@ -3,8 +3,8 @@
 Contains two conversion tools:
 
 1. From our specification format (`smv` file with goal automata files) to SYNT-AIGER-LIVE format (that we use for the synthesis with liveness tool): 
-   - the main script file is `spec_2_aig.py`
-   - that script file uses the script `spec_2_smv.py` which itself translates our specification smv format into `smv` format that can be then later understood by aiger tools
+    - the main script file is `spec_2_aig.py`
+    - that script file uses the script `spec_2_smv.py` which itself translates our specification smv format into `smv` format that can be then later understood by aiger tools
 
 2. From SYNT-AIGER-LIVE format to HWMCC format (with justice).
 

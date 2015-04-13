@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 
+
 # The HWMCC/AIGER semantics of bad traces is
 #   (inv U inv&err) | (G inv & GF fair)     [1]
 #
@@ -54,6 +55,7 @@
 # AND4: ~L2 L1
 #
 
+
 import argparse
 import aiger_swig.aiger_wrap as aiglib
 
@@ -67,10 +69,10 @@ def _write_result(model):
     print string
 
 
-def main(aiger_file_name):
+def main(filename):
     #: :type: aiglib.aiger
     model = aiglib.aiger_init()
-    aiglib.aiger_open_and_read_from_file(model, aiger_file_name)
+    aiglib.aiger_open_and_read_from_file(model, filename)
 
     if model.num_fairness == 0:
         _write_result(model)
@@ -140,12 +142,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert AIGER (FG~fair) into GF(new_fair), not touching B and C. '
                                                  'Print the original model if no fair signals.')
 
-    parser.add_argument('aiger', metavar='aiger', type=str,
+    parser.add_argument('aiger',
+                        metavar='aiger',
+                        nargs='?',
+                        type=str,
+                        default='/dev/stdin',  #TODOfut: Works on Linux-like only (uses '/dev/stdin')
                         help='model synthesized in AIGER format')
 
     args = parser.parse_args()
 
-    exit(main(args.aiger))
+    main(args.aiger)
 
-
-
+    exit(0)

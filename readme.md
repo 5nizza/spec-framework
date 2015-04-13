@@ -8,6 +8,8 @@ Contains two conversion tools:
 
 2. From SYNT-AIGER-LIVE format to HWMCC format (with justice).
 
+Description of our specification format is at https://verify.iaik.tugraz.at/research/bin/view/Ausgewaehltekapitel/PARTI
+
 
 # Requirements
 

@@ -22,7 +22,7 @@ def rename(l, inputs, outputs) -> str:
 
 
 def main(smv_spec_file_name):
-    scripts_dir = os.path.dirname(os.path.relpath(__file__))
+    scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
     DBG_MSG('calling to %s' % spec_2_smv_path)
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),

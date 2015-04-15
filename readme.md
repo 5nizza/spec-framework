@@ -14,13 +14,16 @@ Description of our specification format is at https://verify.iaik.tugraz.at/rese
 # Requirements
 
 - aiger tools http://fmv.jku.at/aiger/
-  tested with version `1.9.4`
+  Tested with version `1.9.4`.
+  Should be in your PATH.
 
 - `smvflatten` from http://fmv.jku.at/smvflatten/
-  tested with version `1.2.4`
+  Tested with version `1.2.4`.
+  Should be in your PATH.
 
 - GOAL from http://goal.im.ntu.edu.tw/
-  tested with version from `2014.11.17`
+  Tested with version from `2014.11.17`.
+  Configure the path in `config.py`.
 
 
 Put `smvflatten` and aiger tools into your path. Set up in `config.py` your path to `goal`.

@@ -377,7 +377,7 @@ def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-determ
 
 
 def build_automaton(spec:PropertySpec) -> Automaton:
-    DBG_MSG('build_automaton: %s: %s' % (spec.ref, spec.desc))
+    DBG_MSG('build_automaton for spec: <%s: %s>' % (spec.ref, spec.desc))
 
     assert spec.is_automaton, 'other input types are not supported'
     # if spec.is_formula:
@@ -415,7 +415,7 @@ def generate_name_for_spec(spec:PropertySpec) -> str:
     return res
 
 
-def build_module(spec:PropertySpec, signals, comm_defs:str) -> SmvModule:
+def build_spec_module(spec:PropertySpec, signals, comm_defs:str) -> SmvModule:
     automaton = build_automaton(spec)
 
     name = generate_name_for_spec(spec)
@@ -544,8 +544,8 @@ def main(smv_lines, base_dir):
 
     sys_props = set(spec.properties) - env_props
 
-    env_modules = [build_module(s, spec.signals, spec.common_macros) for s in env_props]
-    sys_modules = [build_module(s, spec.signals, spec.common_macros) for s in sys_props]
+    env_modules = [build_spec_module(s, spec.signals, spec.common_macros) for s in env_props]
+    sys_modules = [build_spec_module(s, spec.signals, spec.common_macros) for s in sys_props]
 
     smv_module = StrAwareList()
     smv_module += ['-- %s\n' % (s.name + s.desc) + s.module_str for s in sys_modules + env_modules]

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import copy
-from itertools import count
 from tempfile import NamedTemporaryFile
 import os
 
@@ -210,7 +209,7 @@ def parse_smv_specification(smv_lines, base_dir) -> Specification:
 
 
 def get_tmp_file_name():
-    tmp = NamedTemporaryFile(delete=False)
+    tmp = NamedTemporaryFile(prefix='spec2smv_', delete=False)
     return tmp.name
 
 
@@ -223,12 +222,11 @@ def execute_goal_script(script:str) -> str:
         f.write(script)
         DBG_MSG(script)
 
-    try:
-        res, out, err = execute_shell('%s batch %s' % (config.GOAL, script_tmp_file_name))
-        assert res == 0 and err == '', 'Shell call failed:\n' + 'res=%i\n err=%s' % (res, err)
-        return out
-    finally:
-        os.remove(script_tmp_file_name)
+    res, out, err = execute_shell('%s batch %s' % (config.GOAL, script_tmp_file_name))
+    assert res == 0 and err == '', 'Shell call failed:\n' + 'res=%i\n err=%s' % (res, err)
+
+    os.remove(script_tmp_file_name)
+    return out
 
 
 # def workaround_accept_init(never_str):
@@ -288,20 +286,19 @@ def formula_2_automaton_gff(spec:PropertySpec) -> PropertySpec:
     with open(input_file_name, 'w') as f:
         f.write(spec.data)
 
-    try:
-        goal_script = "translate QPTL -m ltl2ba -t nbw -o %s %s;" % (output_file_name, input_file_name)
-        execute_goal_script(goal_script)
+    goal_script = "translate QPTL -m ltl2ba -t nbw -o %s %s;" % (output_file_name, input_file_name)
+    execute_goal_script(goal_script)
 
-        automaton_data = readfile(output_file_name)
+    automaton_data = readfile(output_file_name)
 
-        new_spec = copy.copy(spec)
-        new_spec.data = automaton_data
-        new_spec.input_type = "automaton"
+    new_spec = copy.copy(spec)
+    new_spec.data = automaton_data
+    new_spec.input_type = "automaton"
 
-        return new_spec
-    finally:
-        os.remove(input_file_name)
-        os.remove(output_file_name)
+    os.remove(input_file_name)
+    os.remove(output_file_name)
+
+    return new_spec
 
 
 def is_liveness(raw_gff:str):
@@ -317,13 +314,11 @@ def minimize_acc_gff(raw_gff:str) -> str:  # TODO: possible to get rid of all th
     with open(input_file_name, 'w') as f:
         f.write(raw_gff)
 
-    try:
-        result_gff = execute_goal_script("acc -min {inp};".format(inp=input_file_name))  # TODO: better stack all the commands and then execute them at once
-        assert result_gff
+    result_gff = execute_goal_script("acc -min {inp};".format(inp=input_file_name))  # TODO: better stack all the commands and then execute them at once
+    assert result_gff
 
-        return result_gff
-    finally:
-        os.remove(input_file_name)
+    os.remove(input_file_name)
+    return result_gff
 
 
 def simplify_gff(raw_gff:str) -> str:
@@ -335,13 +330,13 @@ def simplify_gff(raw_gff:str) -> str:
     with open(input_file_name, 'w') as f:
         f.write(raw_gff)
 
-    try:
-        execute_goal_script("simplify -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
-        return readfile(output_file_name)
-    finally:
-        pass
-        # os.remove(input_file_name)
-        # os.remove(output_file_name)
+    execute_goal_script("simplify -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
+    res = readfile(output_file_name)
+
+    os.remove(input_file_name)
+    os.remove(output_file_name)
+
+    return res
 
 
 def complement_gff(raw_gff:str) -> str:
@@ -353,12 +348,12 @@ def complement_gff(raw_gff:str) -> str:
     with open(input_file_name, 'w') as f:
         f.write(raw_gff)
 
-    try:
-        execute_goal_script("complement -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
-        return readfile(output_file_name)
-    finally:
-        os.remove(input_file_name)
-        os.remove(output_file_name)
+    execute_goal_script("complement -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
+
+    os.remove(input_file_name)
+    os.remove(output_file_name)
+
+    return readfile(output_file_name)
 
 
 def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-deterministic automata
@@ -372,12 +367,13 @@ def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-determ
     with open(input_file_name, 'w') as f:
         f.write(raw_gff)
 
-    try:
-        execute_goal_script("determinization -m bk09 -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
-        return readfile(output_file_name)
-    finally:
-        os.remove(input_file_name)
-        os.remove(output_file_name)
+    execute_goal_script("determinization -m bk09 -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
+    res = readfile(output_file_name)
+
+    os.remove(input_file_name)
+    os.remove(output_file_name)
+
+    return res
 
 
 def build_automaton(spec:PropertySpec) -> Automaton:

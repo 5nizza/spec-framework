@@ -395,6 +395,10 @@ def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-determ
     return res
 
 
+def assert_all_states_are_accepting(automaton:Automaton):
+    assert set(automaton.states) == set(automaton.acc_live_states).union(automaton.acc_dead_states)
+
+
 def build_automaton(spec:PropertySpec) -> Automaton:
     DBG_MSG('build_automaton for spec: <%s: %s>' % (spec.ref, spec.desc))
 
@@ -424,11 +428,10 @@ def build_automaton(spec:PropertySpec) -> Automaton:
     gff = minimize_acc_gff(simplify_gff(determenize_gff(gff)))
     automaton = gff_2_automaton(gff)
 
-    DBG_MSG('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
+    if spec.to_be_invariant:   # TODO: temporal workaround
+        assert_all_states_are_accepting(automaton)
 
-    if str(spec.ref) == "3":
-        DBG_MSG(str(automaton))
-        assert 0
+    DBG_MSG('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
 
     return automaton
 

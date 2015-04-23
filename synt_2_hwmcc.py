@@ -146,7 +146,7 @@ if __name__ == "__main__":
                         metavar='aiger',
                         nargs='?',
                         type=str,
-                        default='/dev/stdin',  #TODOfut: Works on Linux-like only (uses '/dev/stdin')
+                        default='/dev/stdin',  #TODOfut: Works on Linux-like only
                         help='model synthesized in AIGER format')
 
     args = parser.parse_args()

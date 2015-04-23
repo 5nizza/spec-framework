@@ -3,6 +3,7 @@ import argparse
 import copy
 from tempfile import NamedTemporaryFile
 import os
+import re
 
 import config
 from common import Automaton, DBG_MSG, gff_2_automaton
@@ -20,7 +21,8 @@ def label2smvexpr(clauses:set):
 
 
 class SmvModule:
-    def __init__(self, name, desc, module_str, has_bad, has_fair):
+    def __init__(self, name, module_inputs, desc, module_str, has_bad, has_fair):
+        self.module_inputs = tuple(module_inputs)
         self.name = name
         self.desc = desc
         self.module_str = module_str
@@ -31,7 +33,7 @@ class SmvModule:
         return 'module: %s (%s), def:\n%s' %(self.name, self.desc, self.module_str)
 
 
-def det_automaton_to_smv_module(signals, automaton:Automaton, module_name:str, desc:str) -> SmvModule:
+def det_automaton_to_smv_module(signals_and_macros, automaton:Automaton, module_name:str, desc:str) -> SmvModule:
     """
     :return: smv module named `module_name`. The module defines (output) signals: `bad`, `fair`, `fall_out`.
     The transitions contain sink state to account for failing out of the automaton. In this case `fall_out` is true.
@@ -78,12 +80,14 @@ esac;
     fall_out = 'fall_out := (state=sink_state);'
 
     module_str = template.format(name=module_name,
-                                 signals=', '.join(signals),
+                                 signals=', '.join(map(str, signals_and_macros)),
                                  init_state=automaton.init_state, enum_states=enum_states,
                                  transitions=transitions,
                                  bad_def=bad_def, fair_def=fair_def, fall_out=fall_out)
 
-    return SmvModule(module_name, desc, module_str, len(automaton.acc_dead_states)>0, len(automaton.acc_live_states)>0)
+    return SmvModule(module_name, signals_and_macros, desc, module_str,
+                     len(automaton.acc_dead_states)>0,
+                     len(automaton.acc_live_states)>0)
 
 
 class PropertySpec:
@@ -139,12 +143,12 @@ def get_variables(vars_comment, smv_lines) -> list:
 
 
 class Specification:
-    def __init__(self, inputs, outputs, common_macros:str,
+    def __init__(self, inputs, outputs, macros_signals,
                  properties,
                  user_main_module:str):
+        self.macros_signals = tuple(macros_signals)
         self.user_main_module = user_main_module
         self.properties = properties
-        self.common_macros = common_macros
         self.outputs = tuple(outputs)
         self.inputs = tuple(inputs)
 
@@ -193,6 +197,19 @@ def parse_smv_spec_part(spec_smv_lines:list, base_dir:str):
     return specs
 
 
+def parse_macros_signals(define_section:str) -> list:
+    all_signals = list()
+    lines = define_section.splitlines()
+    for l in lines:
+        match = re.fullmatch(' *([a-zA-Z0-9_@]+) *: *=.*', l)    # matching "  ided_92 := ..."
+        if match:
+            signals = match.groups()
+            assert len(signals) == 1, str(signals) + ' :found on: ' + l
+            all_signals.append(signals[0])
+
+    return all_signals
+
+
 def parse_smv_specification(smv_lines, base_dir) -> Specification:
     specs_start = find(lambda l: l.strip() == "SPEC", smv_lines)
     specs = parse_smv_spec_part(smv_lines[specs_start:], base_dir)
@@ -200,10 +217,10 @@ def parse_smv_specification(smv_lines, base_dir) -> Specification:
     user_main_module = '\n'.join(smv_lines[:specs_start])
 
     common_defs = get_guarded_block('common definitions', smv_lines)
-    common_defs = '\n'.join(common_defs)
+    macros_signals = parse_macros_signals('\n'.join(common_defs))
 
     return Specification(get_variables('inputs', smv_lines), get_variables('outputs', smv_lines),
-                         common_defs,
+                         macros_signals,
                          specs,
                          user_main_module)
 
@@ -330,7 +347,7 @@ def simplify_gff(raw_gff:str) -> str:
     with open(input_file_name, 'w') as f:
         f.write(raw_gff)
 
-    execute_goal_script("simplify -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
+    execute_goal_script("simplify -m simulation -dse -ds -rse -rs -ru -rd -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
     res = readfile(output_file_name)
 
     os.remove(input_file_name)
@@ -350,10 +367,12 @@ def complement_gff(raw_gff:str) -> str:
 
     execute_goal_script("complement -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
 
+    res = readfile(output_file_name)
+
     os.remove(input_file_name)
     os.remove(output_file_name)
 
-    return readfile(output_file_name)
+    return res
 
 
 def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-deterministic automata
@@ -407,6 +426,10 @@ def build_automaton(spec:PropertySpec) -> Automaton:
 
     DBG_MSG('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
 
+    if str(spec.ref) == "3":
+        DBG_MSG(str(automaton))
+        assert 0
+
     return automaton
 
 
@@ -415,14 +438,11 @@ def generate_name_for_spec(spec:PropertySpec) -> str:
     return res
 
 
-def build_spec_module(spec:PropertySpec, signals, comm_defs:str) -> SmvModule:
+def build_spec_module(spec:PropertySpec, signals_and_macros) -> SmvModule:
     automaton = build_automaton(spec)
 
     name = generate_name_for_spec(spec)
-    smv_module = det_automaton_to_smv_module(signals, automaton, name, spec.desc)
-
-    smv_module.module_str += '\n'
-    smv_module.module_str += comm_defs
+    smv_module = det_automaton_to_smv_module(signals_and_macros, automaton, name, spec.desc)
 
     return smv_module
 
@@ -455,14 +475,17 @@ esac;
 
     fair_def = 'fair := (state=0);'  # TODO: extract constant 'fair'
 
-    signals = ', '.join('fair%s'%i for i in range(1, nof_fair_signals+1))
+    signals = ('fair%s'%i for i in range(1, nof_fair_signals+1))
+    signals_str = ', '.join(signals)
 
-    result = template.format(init_state=init_state, name=name, signals=signals, enum_states=enum_states, fair_def=fair_def, transitions=transitions)
+    result = template.format(init_state=init_state, name=name, signals=signals_str, enum_states=enum_states, fair_def=fair_def, transitions=transitions)
 
-    return SmvModule(name, '', result, False, True)
+    return SmvModule(name, signals, '', result, False, True)
 
 
-def build_main_module(env_modules, sys_modules, user_main_module:str, signals, counting_fairness_module:SmvModule) -> StrAwareList:
+def build_main_module(env_modules, sys_modules, user_main_module:str,
+                      signals_and_macros,
+                      counting_fairness_module:SmvModule) -> StrAwareList:
     main_module = StrAwareList()
     main_module += user_main_module
     main_module.sep()
@@ -470,7 +493,8 @@ def build_main_module(env_modules, sys_modules, user_main_module:str, signals, c
     if env_modules:
         main_module += "VAR --invariant modules"
         for m in env_modules:
-            main_module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(signals))
+            assert set(m.module_inputs).issubset(signals_and_macros)
+            main_module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
         main_module.sep()
 
         main_module += "INVAR"
@@ -479,7 +503,8 @@ def build_main_module(env_modules, sys_modules, user_main_module:str, signals, c
 
     main_module += "VAR --spec modules"
     for m in sys_modules:
-        main_module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(signals))
+        assert set(m.module_inputs).issubset(signals_and_macros)
+        main_module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
         assert m.has_bad or m.has_fair, str(m)
 
     if counting_fairness_module:
@@ -544,8 +569,10 @@ def main(smv_lines, base_dir):
 
     sys_props = set(spec.properties) - env_props
 
-    env_modules = [build_spec_module(s, spec.signals, spec.common_macros) for s in env_props]
-    sys_modules = [build_spec_module(s, spec.signals, spec.common_macros) for s in sys_props]
+    env_modules = [build_spec_module(s, spec.signals + spec.macros_signals)
+                   for s in env_props]
+    sys_modules = [build_spec_module(s, spec.signals + spec.macros_signals)
+                   for s in sys_props]
 
     smv_module = StrAwareList()
     smv_module += ['-- %s\n' % (s.name + s.desc) + s.module_str for s in sys_modules + env_modules]
@@ -557,7 +584,9 @@ def main(smv_lines, base_dir):
         counting_fairness_module = build_counting_fairness_module(nof_sys_fair_modules, 'counting_fairness')
         smv_module += counting_fairness_module.module_str
 
-    smv_module += build_main_module(env_modules, sys_modules, spec.user_main_module, spec.signals,
+    smv_module += build_main_module(env_modules, sys_modules,
+                                    spec.user_main_module,
+                                    spec.signals + spec.macros_signals,
                                     counting_fairness_module)
 
     print(smv_module)

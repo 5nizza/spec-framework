@@ -31,12 +31,18 @@ class Automaton:
 
         assert self.acc_live_states or self.acc_dead_states
 
-    def is_safety(self):
+    def is_safety(self):   # heuristics
+        if is_all_states_are_accepting(self):
+            return True
         return not self.acc_live_states
 
     def __str__(self):
         return 'states: %s, init_state: %s, acc_live_states: %s, acc_trap_states: %s, edges: %s' % \
             (self.states, self.init_state, self.acc_live_states, self.acc_dead_states, self.edges)
+
+
+def is_all_states_are_accepting(automaton:Automaton):
+    return set(automaton.states) == set(automaton.acc_live_states).union(automaton.acc_dead_states)
 
 
 # def _remove_comments(automaton_str):

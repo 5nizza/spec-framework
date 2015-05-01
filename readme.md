@@ -14,11 +14,12 @@ Description of our specification format is at https://verify.iaik.tugraz.at/rese
 # Requirements
 
 - aiger tools http://fmv.jku.at/aiger/
-  Tested with version `1.9.4`.
+  Tested with version `1.9.9`.
+  _Important_: change `aiger.c:135` line to `out = aiger_not(src->outputs[0].lit);`.
   Should be in your PATH.
 
 - `smvflatten` from http://fmv.jku.at/smvflatten/
-  Tested with version `1.2.4`.
+  Tested with version `1.2.5`.
   Should be in your PATH.
 
 - GOAL from http://goal.im.ntu.edu.tw/

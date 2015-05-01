@@ -6,7 +6,7 @@ import os
 import re
 
 import config
-from common import Automaton, DBG_MSG, gff_2_automaton
+from common import Automaton, DBG_MSG, gff_2_automaton, is_all_states_are_accepting
 from python_ext import readfile, stripped, find
 from shell import execute_shell
 from str_aware_list import StrAwareList
@@ -395,10 +395,6 @@ def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-determ
     return res
 
 
-def assert_all_states_are_accepting(automaton:Automaton):
-    assert set(automaton.states) == set(automaton.acc_live_states).union(automaton.acc_dead_states)
-
-
 def build_automaton(spec:PropertySpec) -> Automaton:
     DBG_MSG('build_automaton for spec: <%s: %s>' % (spec.ref, spec.desc))
 
@@ -427,9 +423,10 @@ def build_automaton(spec:PropertySpec) -> Automaton:
     # 2) should also help to reduce the max value of liveness counters and their number (if any)
     gff = minimize_acc_gff(simplify_gff(determenize_gff(gff)))
     automaton = gff_2_automaton(gff)
+    # TODOopt: try minimize_acc(simplify(minimize_acc(determenize(..)))
 
     if spec.to_be_invariant:   # TODO: temporal workaround
-        assert_all_states_are_accepting(automaton)
+        assert is_all_states_are_accepting(automaton), str(automaton)
 
     DBG_MSG('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
 
@@ -488,7 +485,8 @@ esac;
 
 def build_main_module(env_modules, sys_modules, user_main_module:str,
                       signals_and_macros,
-                      counting_fairness_module:SmvModule) -> StrAwareList:
+                      counting_fairness_module:SmvModule,
+                      k:int) -> StrAwareList:
     main_module = StrAwareList()
     main_module += user_main_module
     main_module.sep()
@@ -522,8 +520,11 @@ def build_main_module(env_modules, sys_modules, user_main_module:str,
         main_module.sep()
 
     if counting_fairness_module:
-        main_module += "FAIRNESS"
-        main_module += '  sys_prop_%s.fair' % counting_fairness_module.name
+        if k == 0:
+            main_module += "FAIRNESS"
+            main_module += '  sys_prop_%s.fair' % counting_fairness_module.name
+        else:   # turn it into k-safety: TODO: remove this functionality, use a separate script for turning AIGER with fairness into k-safety AIGER
+            assert 0
 
     return main_module
 
@@ -560,7 +561,7 @@ def strip_unused_symbols(spec_property:PropertySpec):
     spec_property.data = '\n'.join(result)
 
 
-def main(smv_lines, base_dir):
+def main(smv_lines, base_dir, k):
     spec = parse_smv_specification(smv_lines, base_dir)
 
     for p in spec.properties:
@@ -590,7 +591,8 @@ def main(smv_lines, base_dir):
     smv_module += build_main_module(env_modules, sys_modules,
                                     spec.user_main_module,
                                     spec.signals + spec.macros_signals,
-                                    counting_fairness_module)
+                                    counting_fairness_module,
+                                    k)
 
     print(smv_module)
 
@@ -604,7 +606,19 @@ if __name__ == "__main__":
                         type=argparse.FileType(),
                         help='input SMV file')
 
+    parser.add_argument('--ksafety',
+                        type=int,
+                        default=0,
+                        help='Replace fairness with k-safety '
+                             '(still uses invariants (C). '
+                             'Then, to produce the format with the single output '
+                             'use the script aigmove)')
+
     args = parser.parse_args()
     DBG_MSG("run with args:", args)
+    assert args.ksafety >= 0, str(args.ksafety)
+    assert 0, 'remove ksafety bullshit'
+    exit(main(args.smv.read().splitlines(),
+              os.path.dirname(args.smv.name),
+              args.ksafety))
 
-    exit(main(args.smv.read().splitlines(), os.path.dirname(args.smv.name)))

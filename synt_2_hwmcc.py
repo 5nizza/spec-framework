@@ -63,7 +63,8 @@ import aiger_swig.aiger_wrap as aiglib
 def _write_result(model):
     # aiglib.aiger_reencode(model)  # ic3-ref needs (?) 'right' order of indices of ANDs, etc.
 
-    res, string = aiglib.aiger_write_to_string(model, aiglib.aiger_ascii_mode, 268435456)
+    res, string = aiglib.aiger_write_to_string(model, aiglib.aiger_ascii_mode, 2147483648)
+
     assert res != 0, 'writing failure'
 
     print string
@@ -92,6 +93,7 @@ def main(filename):
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
     and1 = aiglib.get_aiger_and(model.ands, model.num_ands-1)
+    # TODO: use aiger_is_and, remove this func from the interface
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
@@ -112,6 +114,7 @@ def main(filename):
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L1')
     #: :type: aiglib.aiger_and
     L1 = aiglib.get_aiger_symbol(model.latches, model.num_latches-1)
+    # TODO: use aiger_is_latch, remove this from the interface
     next_lit += 2
 
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L2')

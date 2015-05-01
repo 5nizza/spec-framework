@@ -4,6 +4,7 @@ import sys
 from console_helpers import print_red, print_green
 
 
+# python2.7 version
 def execute_shell(cmd, input=''):
     """
     :param cmd:

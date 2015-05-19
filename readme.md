@@ -15,7 +15,7 @@ Description of our specification format is at https://verify.iaik.tugraz.at/rese
 
 - aiger tools http://fmv.jku.at/aiger/
   Tested with version `1.9.9`.
-  _Important_: change `aiger.c:135` line to `out = aiger_not(src->outputs[0].lit);`.
+  _Important_: change `aigor.c:135` line to `out = aiger_not(src->outputs[0].lit);`.
   Should be in your PATH.
 
 - `smvflatten` from http://fmv.jku.at/smvflatten/

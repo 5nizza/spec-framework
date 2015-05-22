@@ -617,7 +617,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     DBG_MSG("run with args:", args)
     assert args.ksafety >= 0, str(args.ksafety)
-    assert 0, 'remove ksafety bullshit'
     exit(main(args.smv.read().splitlines(),
               os.path.dirname(args.smv.name),
               args.ksafety))

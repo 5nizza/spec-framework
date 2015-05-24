@@ -238,9 +238,10 @@ def execute_goal_script(script:str) -> str:
     with open(script_tmp_file_name, 'w') as f:
         f.write(script)
         DBG_MSG(script)
-
-    res, out, err = execute_shell('%s batch %s' % (config.GOAL, script_tmp_file_name))
-    assert res == 0 and err == '', 'Shell call failed:\n' + 'res=%i\n err=%s' % (res, err)
+    
+    cmd_to_execute = '%s batch %s' % (config.GOAL, script_tmp_file_name)
+    res, out, err = execute_shell(cmd_to_execute)
+    assert res == 0 and err == '', 'Shell call failed:\n' + cmd_to_execute + '\nres=%i\n err=%s' % (res, err)
 
     os.remove(script_tmp_file_name)
     return out
@@ -478,15 +479,16 @@ esac;
     signals = ('fair%s'%i for i in range(1, nof_fair_signals+1))
     signals_str = ', '.join(signals)
 
-    result = template.format(init_state=init_state, name=name, signals=signals_str, enum_states=enum_states, fair_def=fair_def, transitions=transitions)
+    result = template.format(init_state=init_state, name=name,
+                             signals=signals_str, enum_states=enum_states,
+                             fair_def=fair_def, transitions=transitions)
 
     return SmvModule(name, signals, '', result, False, True)
 
 
 def build_main_module(env_modules, sys_modules, user_main_module:str,
                       signals_and_macros,
-                      counting_fairness_module:SmvModule,
-                      k:int) -> StrAwareList:
+                      counting_fairness_module:SmvModule) -> StrAwareList:
     main_module = StrAwareList()
     main_module += user_main_module
     main_module.sep()
@@ -520,11 +522,8 @@ def build_main_module(env_modules, sys_modules, user_main_module:str,
         main_module.sep()
 
     if counting_fairness_module:
-        if k == 0:
-            main_module += "FAIRNESS"
-            main_module += '  sys_prop_%s.fair' % counting_fairness_module.name
-        else:   # turn it into k-safety: TODO: remove this functionality, use a separate script for turning AIGER with fairness into k-safety AIGER
-            assert 0
+        main_module += "FAIRNESS"
+        main_module += '  sys_prop_%s.fair' % counting_fairness_module.name
 
     return main_module
 
@@ -561,7 +560,7 @@ def strip_unused_symbols(spec_property:PropertySpec):
     spec_property.data = '\n'.join(result)
 
 
-def main(smv_lines, base_dir, k):
+def main(smv_lines, base_dir):
     spec = parse_smv_specification(smv_lines, base_dir)
 
     for p in spec.properties:
@@ -591,8 +590,7 @@ def main(smv_lines, base_dir, k):
     smv_module += build_main_module(env_modules, sys_modules,
                                     spec.user_main_module,
                                     spec.signals + spec.macros_signals,
-                                    counting_fairness_module,
-                                    k)
+                                    counting_fairness_module)
 
     print(smv_module)
 
@@ -606,18 +604,8 @@ if __name__ == "__main__":
                         type=argparse.FileType(),
                         help='input SMV file')
 
-    parser.add_argument('--ksafety',
-                        type=int,
-                        default=0,
-                        help='Replace fairness with k-safety '
-                             '(still uses invariants (C). '
-                             'Then, to produce the format with the single output '
-                             'use the script aigmove)')
-
     args = parser.parse_args()
     DBG_MSG("run with args:", args)
-    assert args.ksafety >= 0, str(args.ksafety)
-    exit(main(args.smv.read().splitlines(),
-              os.path.dirname(args.smv.name),
-              args.ksafety))
 
+    exit(main(args.smv.read().splitlines(),
+              os.path.dirname(args.smv.name)))

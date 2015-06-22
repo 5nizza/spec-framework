@@ -27,7 +27,7 @@ Description of our specification format is at https://verify.iaik.tugraz.at/rese
   Configure the path in `config.py`.
 
 - If you plan to use `mc.sh` (wrapper around a model checker for HWMCC format; used by `check_model.sh`) 
-  or `check_model.sh` (a helper to verify check models in the modified SYNTCOMP format), 
+  or `check_model.sh` (a helper to verify models in the modified SYNTCOMP format), 
   then you need to install IIMC model checker and edit `mc.sh` to provide the path to `iimc`.
   IIMC model checker can be downloaded at http://ecee.colorado.edu/wpmu/iimc/
 

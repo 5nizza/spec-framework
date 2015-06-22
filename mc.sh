@@ -3,7 +3,7 @@
 MY_DIR=`dirname $0`
 GET_NOF_PROPERTIES=$MY_DIR/get_nof_properties.py
 
-. ./config.sh
+. $MY_DIR/config.sh
 
 if [ "$#" -ne 1 ]
 then

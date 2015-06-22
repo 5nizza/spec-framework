@@ -1,9 +1,9 @@
 #!/bin/bash
 
-IIMC_CHECKER=/home/ayrat/projects/iimc-2.0/iimc
-
 MY_DIR=`dirname $0`
 GET_NOF_PROPERTIES=$MY_DIR/get_nof_properties.py
+
+. ./config.sh
 
 if [ "$#" -ne 1 ]
 then

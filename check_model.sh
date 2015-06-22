@@ -20,6 +20,8 @@ echo "Translating the model into HWMCC format ... "
 $SYNT_2_HWMCC $outfile_path | $FAIRNESS_2_JUSTICE > $outfile_hwmcc_path
 rc=$?
 
+echo " Translated HWMCC file " $outfile_hwmcc_path
+
 if [[ $rc != 0 ]]
 then
   echo "Conversion FAILED!!!"

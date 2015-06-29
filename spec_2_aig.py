@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-import encodings
+import logging
 import subprocess
 import sys
 import os
-from common import DBG_MSG
-from console_helpers import print_green
 from python_ext import find, readfile
-from shell import execute_shell
 import argparse
 from spec_2_smv import get_variables
 
@@ -22,12 +19,16 @@ def rename(l, inputs, outputs) -> str:
 
 
 def main(smv_spec_file_name):
+    logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
-    DBG_MSG('calling to %s' % spec_2_smv_path)
+    logger.debug('calling to %s' % spec_2_smv_path)
+
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),
     # so use piping here instead
-    aig = str(subprocess.check_output('%s %s | smvflatten | smvtoaig | aigtoaig -a' % (spec_2_smv_path, smv_spec_file_name), shell=True),
+    aig = str(subprocess.check_output('%s %s | smvflatten | smvtoaig | aigtoaig -a' %
+                                      (spec_2_smv_path, smv_spec_file_name),
+                                      shell=True),
               encoding=sys.getdefaultencoding())
 
     inputs = get_variables('inputs', readfile(smv_spec_file_name).splitlines())

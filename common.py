@@ -1,24 +1,18 @@
 import xml.etree.ElementTree as ET
 import sys
+import logging
 
 from sympy import true, sympify
 from sympy.core.symbol import Symbol
 from sympy.logic.boolalg import simplify_logic, false
-from console_helpers import print_green
 
 
-debug = True
-log = True
-
-
-def DBG_MSG(*args):
-    if debug:
-        print("[DBG]", *args, file=sys.stderr)
-
-
-def LOG_MSG(s):
-    if log:
-        print("[LOG] " + str(s))
+def setup_logging(logger_name):
+    logging.basicConfig(format="%(asctime)-10s%(message)s",
+                        datefmt="%H:%M:%S",
+                        level=logging.DEBUG,
+                        stream=sys.stderr)
+    return logging.getLogger(logger_name)
 
 
 class Automaton:

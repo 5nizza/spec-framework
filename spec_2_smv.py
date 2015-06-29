@@ -6,7 +6,7 @@ import os
 import re
 
 import config
-from common import Automaton, DBG_MSG, gff_2_automaton, is_all_states_are_accepting
+from common import Automaton, gff_2_automaton, is_all_states_are_accepting, setup_logging
 from python_ext import readfile, stripped, find
 from shell import execute_shell
 from str_aware_list import StrAwareList
@@ -40,8 +40,8 @@ def det_automaton_to_smv_module(signals_and_macros, automaton:Automaton, module_
     The function assumes the automaton is determenistic.
     """
 
-    DBG_MSG("automaton_to_smv_module: %s has %d states, %d fair states, %d bad states" %
-            (module_name, len(automaton.states), len(automaton.acc_live_states), len(automaton.acc_dead_states)))
+    logger.debug("automaton_to_smv_module: %s has %d states, %d fair states, %d bad states" %
+                 (module_name, len(automaton.states), len(automaton.acc_live_states), len(automaton.acc_dead_states)))
 
     assert 'sink_state' not in automaton.states
     assert 'state' not in automaton.states
@@ -237,7 +237,7 @@ def execute_goal_script(script:str) -> str:
     script_tmp_file_name = get_tmp_file_name()
     with open(script_tmp_file_name, 'w') as f:
         f.write(script)
-        DBG_MSG(script)
+        logger.debug(script)
     
     cmd_to_execute = '%s batch %s' % (config.GOAL, script_tmp_file_name)
     res, out, err = execute_shell(cmd_to_execute)
@@ -325,7 +325,7 @@ def is_liveness(raw_gff:str):
 
 
 def minimize_acc_gff(raw_gff:str) -> str:  # TODO: possible to get rid of all these tmp files in other places?
-    DBG_MSG('minimize_acc_gff')
+    logger.debug('minimize_acc_gff')
 
     input_file_name = get_tmp_file_name()
 
@@ -340,7 +340,7 @@ def minimize_acc_gff(raw_gff:str) -> str:  # TODO: possible to get rid of all th
 
 
 def simplify_gff(raw_gff:str) -> str:
-    DBG_MSG('simplifying')
+    logger.info('simplifying')
 
     input_file_name = get_tmp_file_name()
     output_file_name = get_tmp_file_name()
@@ -358,7 +358,7 @@ def simplify_gff(raw_gff:str) -> str:
 
 
 def complement_gff(raw_gff:str) -> str:
-    DBG_MSG('complementing')
+    logger.info('complementing')
 
     input_file_name = get_tmp_file_name()
     output_file_name = get_tmp_file_name()
@@ -378,7 +378,7 @@ def complement_gff(raw_gff:str) -> str:
 
 def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-deterministic automata
     """ Assumes that the determinization is possible. """
-    DBG_MSG('determinizing')
+    logger.info('determinizing')
 
     # TODOopt: don't use files
     input_file_name = get_tmp_file_name()
@@ -397,7 +397,7 @@ def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-determ
 
 
 def build_automaton(spec:PropertySpec) -> Automaton:
-    DBG_MSG('build_automaton for spec: <%s: %s>' % (spec.ref, spec.desc))
+    logger.info('build_automaton for spec: <%s: %s>' % (spec.ref, spec.desc))
 
     assert spec.is_automaton, 'other input types are not supported'
     # if spec.is_formula:
@@ -409,11 +409,11 @@ def build_automaton(spec:PropertySpec) -> Automaton:
         assert not spec.is_bad_trace, 'invariant only as good traces is supported'  # TODOfut: support for safety bad traces
     else:
         if is_liveness(gff):
-            DBG_MSG('LIVENESS automaton!')
+            logger.info('LIVENESS automaton!')
             if spec.is_bad_trace:
                 gff = complement_gff(gff)
         else:
-            DBG_MSG('SAFETY automaton!')
+            logger.info('SAFETY automaton!')
             # we could also support good traces by complementing the input automaton,
             # but this can explode (in # of states, but unlikely comput expensive),
             # and we want to keep the original encoding (which is likely consice)
@@ -429,7 +429,7 @@ def build_automaton(spec:PropertySpec) -> Automaton:
     if spec.to_be_invariant:   # TODO: temporal workaround
         assert is_all_states_are_accepting(automaton), str(automaton)
 
-    DBG_MSG('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
+    logger.info('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
 
     return automaton
 
@@ -605,7 +605,9 @@ if __name__ == "__main__":
                         help='input SMV file')
 
     args = parser.parse_args()
-    DBG_MSG("run with args:", args)
+
+    logger = setup_logging(__name__)
+    logger.debug("run with args:", args)
 
     exit(main(args.smv.read().splitlines(),
               os.path.dirname(args.smv.name)))

@@ -39,4 +39,4 @@ Not very user-friendly.
 
 # Authors
 Ayrat Khalimov and the SCOS group at TU Graz.
-Email on gmail: ayratkhalimov.
+Email on gmail: ayrat.khalimov.

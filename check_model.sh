@@ -28,7 +28,7 @@ then
   exit -1
 fi
 
-echo "Model checking ... "
+echo "(SYNT) Model checking ... "
 
 $MC $outfile_hwmcc_path
 rc=$?

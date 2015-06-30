@@ -22,7 +22,7 @@ echo " The number of properties to be checked is "$nof_properties"..."
 mc_success=1
 for pi in $(seq 0 `expr $nof_properties - 1`) 
 do
-    echo "  checking property #"$pi
+    echo "  checking (hwmcc) property #"$pi
     iimc_out=`$IIMC_CHECKER $MODEL --pi $pi`
     iimc_rc=$?
     if [[ $iimc_rc != 0 ]]
@@ -37,7 +37,7 @@ do
 
     if [[ $iimc_answer != 0 ]]
     then
-        echo "  IIMC model checking: the resulting circuit is incorrect!!!!!!!!!!!"
+        echo "  IIMC model checking: the resulting circuit is incorrect!!!!!!!!!!! " 
         exit -1
     fi
     echo "  done with property #"$pi": correct"

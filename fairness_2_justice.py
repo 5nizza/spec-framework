@@ -48,7 +48,7 @@ def main(aiger_lines):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Convert single fairness property into single justice property.')
+    parser = argparse.ArgumentParser(description='FOR INTERNAL USE ONLY!')
 
     parser.add_argument('file', metavar='file',
                         type=argparse.FileType(),

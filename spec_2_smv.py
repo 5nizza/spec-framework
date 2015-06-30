@@ -429,7 +429,7 @@ def build_automaton(spec:PropertySpec) -> Automaton:
     if spec.to_be_invariant:   # TODO: temporal workaround
         assert is_all_states_are_accepting(automaton), str(automaton)
 
-    logger.info('after all manipulations: ', ['liveness', 'safety'][automaton.is_safety()])
+    logger.info('after all manipulations: %s', ['liveness', 'safety'][automaton.is_safety()])
 
     return automaton
 
@@ -518,7 +518,8 @@ def build_main_module(env_modules, sys_modules, user_main_module:str,
 
     if find(lambda m: m.has_bad, sys_modules) != -1:
         main_module += "SPEC"
-        main_module += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name for m in filter(lambda m: m.has_bad, sys_modules))
+        main_module += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
+                                                 for m in filter(lambda m: m.has_bad, sys_modules))
         main_module.sep()
 
     if counting_fairness_module:
@@ -578,19 +579,20 @@ def main(smv_lines, base_dir):
                    for s in sys_props]
 
     smv_module = StrAwareList()
-    smv_module += ['-- %s\n' % (s.name + s.desc) + s.module_str for s in sys_modules + env_modules]
+    smv_module += ['-- %s\n' % (s.name + s.desc) + s.module_str
+                   for s in sys_modules + env_modules]
     smv_module.sep()
 
-    counting_fairness_module = None
+    counting_justice_module = None
     nof_sys_fair_modules = len(list(filter(lambda m: m.has_fair, sys_modules)))
     if nof_sys_fair_modules:
-        counting_fairness_module = build_counting_fairness_module(nof_sys_fair_modules, 'counting_fairness')
-        smv_module += counting_fairness_module.module_str
+        counting_justice_module = build_counting_fairness_module(nof_sys_fair_modules, 'counting_justice')
+        smv_module += counting_justice_module.module_str
 
     smv_module += build_main_module(env_modules, sys_modules,
                                     spec.user_main_module,
                                     spec.signals + spec.macros_signals,
-                                    counting_fairness_module)
+                                    counting_justice_module)
 
     print(smv_module)
 
@@ -607,7 +609,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logger = setup_logging(__name__)
-    logger.debug("run with args:", args)
+    logger.info("run with args:", args)
 
     exit(main(args.smv.read().splitlines(),
               os.path.dirname(args.smv.name)))

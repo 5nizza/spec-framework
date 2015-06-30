@@ -1,39 +1,38 @@
 #!/usr/bin/env python2.7
 
-
 # The HWMCC/AIGER semantics of bad traces is
-#   (inv U inv&err) | (G inv & GF fair)     [1]
+#   (inv U inv&err) | (G inv & GF just)     [1]
 #
 # While we need to model check AIGER circuit against (good traces)
-#   (~err W ~inv) & (G inv -> GF fair)
+#   (~err W ~inv) & (G inv -> GF just)
 #
 # which translates into the semantics of bad traces
-#   (inv U inv&err) | (G inv & FG ~fair)    [2]
+#   (inv U inv&err) | (G inv & FG ~just)    [2]
 #
 #
-# We introduce new signal `new_fair` and use it instead of `fair` in [2],
-# and reuse `inv`, `err`, (old)`fair`. Thus, the semantics of bad traces is:
-#   (inv U inv&err) | (G inv & GF new_fair)
+# We introduce new signal `new_just` and use it instead of `just` in [2],
+# and reuse `inv`, `err`, (old)`just`. Thus, the semantics of bad traces is:
+#   (inv U inv&err) | (G inv & GF new_just)
 #
-# Signal `new_fair` is defined as staying in the middle state of the automaton:
-#   (start)   -aux->   (new_fair)   -fair->   (exit)
-#     \/~aux              \/~fair               \/True
+# Signal `new_just` is defined as staying in the middle state of the automaton:
+#   (start)   -aux->   (new_just)   -just->   (exit)
+#     \/~aux              \/~just               \/True
 #
 # In AIGER we introduce two latches: L2,L1.
 # start = 00
-# new_fair = 01
+# new_just = 01
 # exit = 11
 #
 # `aux` ---> |OR| --->|L1| -------> `before(aux)`        //aka 'exited the start state'
 #             |             |
 #             --<-----------
 #
-# `to_exit = before(aux) & fair`
-# `to_exit` --->|OR| --->|L2| ------> `before(to_exit)`  //aka 'exited the new_fair state'
+# `to_exit = before(aux) & just`
+# `to_exit` --->|OR| --->|L2| ------> `before(to_exit)`  //aka 'exited the new_just state'
 #                |             |
 #                --<-----------
 #
-# To make `new_fair=01` hold, we need to receive `aux` and after that moment never received `fair`.
+# To make `new_just=01` hold, we need to receive `aux` and after that moment never received `just`.
 #
 # AIGER for this:
 #
@@ -41,7 +40,7 @@
 # OR1: ~(~aux & ~L1)   -- AND1
 #
 # L2: OR2
-# OR2: ~(~(L1 & fair) & ~L2)   -- two ANDs: AND2(internal) and AND3
+# OR2: ~(~(L1 & just) & ~L2)   -- two ANDs: AND2(internal) and AND3
 #
 # F = L2L1==01, thus F = ~L2 & L1
 
@@ -50,7 +49,7 @@
 # L2: ~AND3
 # F: AND4
 # AND1: ~aux ~L1
-# AND2: L1 & fair
+# AND2: L1 & just
 # AND3: ~AND2 ~L2
 # AND4: ~L2 L1
 #
@@ -75,11 +74,12 @@ def main(filename):
     model = aiglib.aiger_init()
     aiglib.aiger_open_and_read_from_file(model, filename)
 
-    if model.num_fairness == 0:
+    if model.num_justice == 0:
         _write_result(model)
         return
 
-    assert model.num_fairness == 1
+    assert model.num_justice == 1
+    assert model.justice.size == 1
 
     next_lit = (model.maxvar + 1)*2
 
@@ -123,27 +123,26 @@ def main(filename):
     next_lit += 2
 
     #: :type: aiglib.aiger_symbol
-    fair = model.fairness
-    old_fair_lit = fair.lit
+    old_just_lit = aiglib.get_justice_lit(model, 0, 0)
 
     # second, define all connections
     and1.rhs0, and1.rhs1 = aux.lit+1, L1.lit+1
-    and2.rhs0, and2.rhs1 = L1.lit, old_fair_lit
+    and2.rhs0, and2.rhs1 = L1.lit, old_just_lit
     and3.rhs0, and3.rhs1 = and2.lhs+1, L2.lit+1
     and4.rhs0, and4.rhs1 = L2.lit+1, L1.lit
 
     L1.next = and1.lhs+1
     L2.next = and3.lhs+1
 
-    fair.lit = and4.lhs
+    aiglib.set_justice_lit(model, 0, 0, and4.lhs)
 
     #
     _write_result(model)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Convert AIGER (FG~fair) into GF(new_fair), not touching B and C. '
-                                                 'Print the original model if no fair signals.')
+    parser = argparse.ArgumentParser(description="Convert from AIGER's FG(~just) into GF(new_just), not touching B and C. "
+                                                 "Print the original model if no justice signals.")
 
     parser.add_argument('aiger',
                         metavar='aiger',

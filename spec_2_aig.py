@@ -26,7 +26,7 @@ def main(smv_spec_file_name):
 
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),
     # so use piping here instead
-    aig = str(subprocess.check_output('%s %s | smvflatten | smvtoaig | aigtoaig -a' %
+    aig = str(subprocess.check_output('%s %s | smvflatten | smvtoaig | aigtoaig -a | fairness_2_justice.py' %
                                       (spec_2_smv_path, smv_spec_file_name),
                                       shell=True),
               encoding=sys.getdefaultencoding())
@@ -54,15 +54,13 @@ def main(smv_spec_file_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Name me!')
+    parser = argparse.ArgumentParser(description='Convert specification '
+                                                 'from the SYNT SMV format '
+                                                 'into the SYNT AIGER format!')
 
     parser.add_argument('file', metavar='file',
                         type=argparse.FileType(),
                         help='input smv spec file')
-
-    # parser.add_argument('--flag', action='store_true',
-    #                     required=False, default=False,
-    #                     help='some flag')
 
     args = parser.parse_args()
     exit(main(args.file.name))

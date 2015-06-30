@@ -1,7 +1,9 @@
 #!/usr/bin/env python2.7
 
-# Model checker IIMC does not support (global) fairness propeties.
-# So this script converts the single fairness into the signel justice.
+# We hack AIGER format and treat fairness as being SYSTEM guarantee,
+# rather than as ENV assumption as in the original AIGER.
+# This script (literally) removes the fairness signal and instead puts
+# it into the justice signal.
 
 import argparse
 import sys

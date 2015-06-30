@@ -70,14 +70,14 @@ SPEC
     aag, m, i, l, o, a = out_lines[0].split()
     assert i == '1' and o == '1'
 
-    inp_signal = int(out_lines[1])
+    inp_reset_signal = int(out_lines[1])
 
     out_def_line = out_lines[1 + 1 + int(l)]
     assert len(out_def_line.split()) == 1, out_def_line
 
     out_signal = int(out_def_line)
 
-    return out, inp_signal, out_signal
+    return out, inp_reset_signal, out_signal
 
 
 def is_negated(l):
@@ -103,7 +103,7 @@ def get_lit_type(l):
 #: :type: aiglib.aiger
 spec = None
 symbol_by_ulit = set()
-counter_and_u_new_lits, counter_latch_u_new_lits = None, None
+counter_and_u_new_lits, counter_latch_u_new_lits = None, None   # _u_ stands for 'unsigned', _s_ -- for 'signed'
 shift = None
 out = None
 new_format = None
@@ -141,20 +141,14 @@ def get_add_symbol(s_new_lit):
 def get_new_s_lit(old_lit):
     """ :return: _signed_ literal """
     # 2 is the input of a counter aig
-    # 2 -> spec.fairness.lit, 3 -> negate(spec.fairness.lit)
+    # 2 -> spec.justice[0].lits[0], 3 -> negate(spec.fairness.lit)
     # counter_other_lit -> counter_other_lit + shift
 
     if strip_lit(old_lit) == 2:
-        res = spec.fairness.lit
+        res = aiglib.get_justice_lit(spec, 0, 0)
         if is_negated(old_lit):
             res = negate(res)
         return res
-
-    # if strip_lit(old_lit) == strip_lit(counter_out_lit):
-    #     res = new_counter_out_lit + shift
-    #     if is_negated(old_lit):
-    #         res = negate(res)
-    #     return res
 
     return old_lit + shift
 
@@ -198,7 +192,7 @@ def define_shift():   # should go before any additions to the spec
 
 
 def add_counter_to_spec(k):
-    counter_aig, inp_signal, out_signal = get_counter_aig(k)
+    counter_aig, inp_reset_signal, out_overflow_signal = get_counter_aig(k)
     define_shift()
     define_counter_new_lits(counter_aig)
 
@@ -237,8 +231,8 @@ def add_counter_to_spec(k):
         else:
             assert 0, l
 
-    # everything is already defined, and now goes
-    aiglib.aiger_add_bad(spec, get_new_s_lit(out_signal), 'k-liveness')
+    # every literal gets defined above, so now goes
+    aiglib.aiger_add_bad(spec, get_new_s_lit(out_overflow_signal), 'k-liveness')
 
 
 def write_and_die():
@@ -270,20 +264,24 @@ def main(spec_filename, k):
     spec = aiglib.aiger_init()
     aiglib.aiger_open_and_read_from_file(spec, spec_filename)
 
-    assert spec.num_justice == 0, 'justice is not supported, only fairness (TODO)'
+    assert spec.num_fairness == 0, 'fairness is not supported, only single justice property'
 
-    if spec.num_fairness == 0:
+    if spec.num_justice == 0:
         write_and_die()
 
+    assert spec.num_justice == 1, 'more than one justice property is not supported yet: ' + str(spec.num_justice)
+    assert spec.justice.size == 1, 'the justice section should contain exactly one literal: ' + str(spec.justice.size)
+
     add_counter_to_spec(k)
-    # format to old-school?
+
     write_and_die()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Convert liveness into k-safety. '
+    parser = argparse.ArgumentParser(description='Convert justice liveness into k-safety. '
                                                  'Requires: smvflatten, and aiger tools in your $PATH. '
-                                                 'By default, the format is with the single bad output. ')
+                                                 'By default, the format is with the single bad output. '
+                                                 'Careful: ignores fairness assumptions.')
 
     parser.add_argument('aiger', metavar='aiger',
                         type=str,
@@ -298,14 +296,14 @@ if __name__ == "__main__":
     parser.add_argument('-k', '--k', type=int, default=2,
                         help='(default 2) '
                              'Max value of the counter. Counting starts from 0.'
-                             'This value will produce spec violation.')
+                             'Reaching this value produces spec violation.')
 
     parser.add_argument('--new', '-n',
                         action='store_true',
                         default=False,
                         help='Produce new format (BCJF) -- '
                              'it adds new k-liveness Bad property '
-                             'but it keeps the fair signal too.')
+                             'but it keeps the justice signal too.')
 
     args = parser.parse_args()
 

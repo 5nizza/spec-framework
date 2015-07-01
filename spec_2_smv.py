@@ -219,7 +219,8 @@ def parse_smv_specification(smv_lines, base_dir) -> Specification:
     common_defs = get_guarded_block('common definitions', smv_lines)
     macros_signals = parse_macros_signals('\n'.join(common_defs))
 
-    return Specification(get_variables('inputs', smv_lines), get_variables('outputs', smv_lines),
+    return Specification(get_variables('inputs', smv_lines),
+                         get_variables('outputs', smv_lines),
                          macros_signals,
                          specs,
                          user_main_module)
@@ -609,7 +610,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logger = setup_logging(__name__)
-    logger.info("run with args:", args)
+    logger.info("run with args:%s", args)
 
     exit(main(args.smv.read().splitlines(),
               os.path.dirname(args.smv.name)))

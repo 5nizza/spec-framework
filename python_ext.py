@@ -12,3 +12,8 @@ def find(lambda_func, l) -> int:
         if lambda_func(e):
             return i
     return -1
+
+
+def find_all(lambda_func, l) -> list:
+    return list(map(lambda i_l: i_l[0],
+                    filter(lambda i,l: lambda_func(l), enumerate(l))))

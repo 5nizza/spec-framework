@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 import argparse
 import copy
-from itertools import count
 import re
 from tempfile import NamedTemporaryFile
 import os
 
 import config
-from common import Automaton, gff_2_automaton, are_all_states_accepting, setup_logging
+from common import Automaton, gff_2_automaton, setup_logging, reduces_to_true
 from python_ext import readfile, stripped, find
 from shell import execute_shell
-from spec_parser import PropertySpec, parse_smv
+from spec_parser import PropertySpec, SmvModule, parse_smv
 from str_aware_list import StrAwareList
 
 
@@ -27,39 +26,22 @@ def label2smvexpr(clauses:set):
     return smv_expr
 
 
-class SmvModule:
-    def __init__(self, name, module_inputs, desc, module_str, has_bad, has_fair):
-        self.module_inputs = tuple(module_inputs)
-        self.name = name
-        self.desc = desc
-        self.module_str = module_str
-        self.has_bad = has_bad
-        self.has_fair = has_fair
-
-    def __str__(self):
-        return 'module: %s (%s), def:\n%s' %(self.name, self.desc, self.module_str)
-
-    def fall_signals(self):
-        assert 0
-    def bad_signals(self):
-        assert 0
-    def fair_signals(self):
-        assert 0
-
-
-def det_automaton_to_smv_module(signals_and_macros, automaton:Automaton, module_name:str, desc:str) -> SmvModule:
+def det_automaton_to_smv_module(automaton:Automaton, module_name:str, desc:str) -> SmvModule:
     """
     :return: smv module named `module_name`.
     The module defines (output) signals: `bad`, `fair`, `fall_out`.
     The transitions contain sink state to account for failing out of the automaton.
-      In this case `fall_out` is true.
-    Signal `fair` is true iff reach an accepting non-sink state.
-    Signal `bad` is true iff reach an accepting sink state.
+    In this case `fall_out` is true.
+    Signal `bad` is true iff reach a dead state.
+    Signal `fair` is true iff reach an accepting state and is_safety is False.
     The function assumes the automaton is determenistic.
     """
 
-    logger.debug("automaton_to_smv_module: %s has %d states, %d fair states, %d bad states" %
-                 (module_name, len(automaton.states), len(automaton.acc_live_states), len(automaton.acc_dead_states)))
+    logger.debug("automaton_to_smv_module: %s: %s: states %d, acc states: %d" %
+                 (module_name,
+                  ['liveness', 'safety'][automaton.is_safety],
+                  len(automaton.states),
+                  len(automaton.acc_states)))
 
     assert 'sink_state' not in automaton.states
     assert 'state' not in automaton.states
@@ -90,22 +72,26 @@ esac;
     transitions = '\n'.join(transitions_list)
 
     bad_def = fair_def = ''
-    if automaton.acc_dead_states:
-        bad_def = 'bad := %s;' % ' | '.join('(state=%s)' % s for s in automaton.acc_dead_states)
-    if automaton.acc_live_states:
-        fair_def = 'fair := %s;' % ' | '.join('(state=%s)' % s for s in automaton.acc_live_states)
+    if automaton.dead_states:
+        bad_def = 'bad := %s;' % ' | '.join('(state=%s)' % s
+                                            for s in automaton.dead_states)
+    if not automaton.is_safety:
+        fair_def = 'fair := %s;' % ' | '.join('(state=%s)' % s
+                                              for s in automaton.acc_states)
 
     fall_out = 'fall_out := (state=sink_state);'
 
+    module_inputs = automaton.propositions  # NOTE: we do not check that user defined all propositions
+
     module_str = template.format(name=module_name,
-                                 signals=', '.join(map(str, signals_and_macros)),
+                                 signals=', '.join(map(str, module_inputs)),
                                  init_state=automaton.init_state, enum_states=enum_states,
                                  transitions=transitions,
                                  bad_def=bad_def, fair_def=fair_def, fall_out=fall_out)
 
-    return SmvModule(module_name, signals_and_macros, desc, module_str,
-                     len(automaton.acc_dead_states)>0,
-                     len(automaton.acc_live_states)>0)
+    return SmvModule(module_name, module_inputs, desc, module_str,
+                     len(automaton.dead_states)>0,
+                     not automaton.is_safety)
 
 
 def get_guarded_block(guard_comment:str, smv_lines) -> list:
@@ -224,93 +210,42 @@ def is_liveness(raw_gff:str):
     return not automaton.is_safety()
 
 
-def minimize_acc_gff(raw_gff:str) -> str:  # TODO: possible to get rid of all these tmp files in other places?
-    logger.debug('minimize_acc_gff')
+def get_nacc_trap_states(states, acc_states, edges):
+    nacc_states = set(states).difference(acc_states)
 
-    input_file_name = get_tmp_file_name()
+    nacc_trap_states = set()
+    for s in nacc_states:
+        s_edges = edges.get((s,s))
+        if s_edges:
+            if reduces_to_true(s_edges):
+                nacc_trap_states.add(s)  # TODOopt: also replace edges with one trivial
 
-    with open(input_file_name, 'w') as f:
-        f.write(raw_gff)
-
-    result_gff = execute_goal_script("acc -min {inp};".format(inp=input_file_name))  # TODO: better stack all the commands and then execute them at once
-    assert result_gff
-
-    os.remove(input_file_name)
-    return result_gff
-
-
-def simplify_gff(raw_gff:str) -> str:
-    logger.info('simplifying')
-
-    input_file_name = get_tmp_file_name()
-    output_file_name = get_tmp_file_name()
-
-    with open(input_file_name, 'w') as f:
-        f.write(raw_gff)
-
-    execute_goal_script("simplify -m simulation -dse -ds -rse -rs -ru -rd -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
-    res = readfile(output_file_name)
-
-    os.remove(input_file_name)
-    os.remove(output_file_name)
-
-    return res
-
-
-def complement_gff(raw_gff:str) -> str:
-    logger.info('complementing')
-
-    input_file_name = get_tmp_file_name()
-    output_file_name = get_tmp_file_name()
-
-    with open(input_file_name, 'w') as f:
-        f.write(raw_gff)
-
-    execute_goal_script("complement -o {out} {inp};".format(out=output_file_name, inp=input_file_name))
-
-    res = readfile(output_file_name)
-
-    os.remove(input_file_name)
-    os.remove(output_file_name)
-
-    return res
-
-
-def determenize_gff(raw_gff:str) -> str:   # TODO: handle the case of non-deterministic automata
-    """ Assumes that the determinization is possible. """
-    logger.info('determinizing')
-
-    # TODOopt: don't use files
-    input_file_name = get_tmp_file_name()
-    output_file_name = get_tmp_file_name()
-
-    with open(input_file_name, 'w') as f:
-        f.write(raw_gff)
-
-    execute_goal_script("determinization -m bk09 -o {out} {inp};".format(out=output_file_name,
-                                                                         inp=input_file_name))
-    res = readfile(output_file_name)
-
-    os.remove(input_file_name)
-    os.remove(output_file_name)
-
-    return res
+    return nacc_trap_states
 
 
 def build_automaton(spec:PropertySpec) -> Automaton:
     """
-    All automata are 'positive' deterministic Buchi automata,
-    (we complement negated ones).
+    We return an automaton that is 'positive deterministic Buchi'
+    (we complement negated ones)
+    (as an optimization the automaton has `fair` and `bad` states).
+    As the last step we do `determinize`, which completes the automaton.
+    The states are of three types:
+      - acc non-trap      (aka `accepting states`)
+      - acc trap          (aka `accepting states`)
+      - non-acc non-trap  (aka `normal`)
+      - non-acc trap      (aka `dead`)
+
+    NOTE we should never fall-out of the automaton.
     """
 
     logger.info('build_automaton for spec: %s', spec.desc)
 
-    assert spec.is_automaton, 'other input types are not supported'
-
     gff = spec.data
+    gff = strip_unused_symbols(gff)
 
     input_file_name = get_tmp_file_name()
     output_file_name = get_tmp_file_name()
+    output_file_name2 = get_tmp_file_name()
 
     with open(input_file_name, 'w') as f:
         f.write(gff)
@@ -319,65 +254,59 @@ def build_automaton(spec:PropertySpec) -> Automaton:
     if not spec.is_positive:
         complement_stmnt = '$res = complement $res;'
 
-    # Minimizing the accepting set:
-    # 1) to make naive safety detection (in later steps) work,
-    # 2) should also help to reduce the max value of liveness counters and their number (if any)
-
+    # determinize goes last
     goal_script = """
-$res = open "{input_file_name}";
+$res = load "{input_file_name}";
 {complement_stmnt}
-$res = determinization -m bk09 $res;
 $res = simplify -m fair -dse -ds -rse -rs -ru -rd $res;
+$res = determinization -m bk09 $res;
 acc -min $res;
 save $res {output_file_name};
+acc -max $res;
+save $res {output_file_name2};
 """.format(complement_stmnt=complement_stmnt,
            input_file_name=input_file_name,
-           output_file_name=output_file_name)
+           output_file_name=output_file_name,
+           output_file_name2=output_file_name2)
 
     execute_goal_script(goal_script)
 
     gff = readfile(output_file_name)
+    gff2 = readfile(output_file_name2)
 
     os.remove(input_file_name)
     os.remove(output_file_name)
+    os.remove(output_file_name2)
 
-    automaton = gff_2_automaton(gff)
+    # The heuristics for identifying automata for pure safety properties is:
+    # with `acc -max` the automaton for a safety property
+    # has all states accepting except for the single non-accepting trap state.
+    init_state2, states2, edges2, acc_states2 = gff_2_automaton(gff2)
+    nacc_trap_states2 = get_nacc_trap_states(states2, acc_states2, edges2)
+    if set(nacc_trap_states2).union(acc_states2) == set(states2):
+        # safety automaton
+        automaton = Automaton(states2, init_state2, acc_states2, nacc_trap_states2, True, tuple(edges2.items()))
+    else:
+        # contains both dead states, and accepting states
+        init_state, states, edges, acc_states = gff_2_automaton(gff)
+        nacc_trap_states = get_nacc_trap_states(states, acc_states, edges)
+        automaton = Automaton(states, init_state, acc_states, nacc_trap_states, False, tuple(edges.items()))
 
-    if automaton.is_safety():
-        assert are_all_states_accepting(automaton), str(automaton)
-
-    logger.info('after all manipulations: %s', ['liveness', 'safety'][automaton.is_safety()])
+    logger.info('after all manipulations: %s', ['liveness', 'safety'][automaton.is_safety])
 
     return automaton
-    # if not spec.is_guarantee:
-    #     assert spec.is_positive, 'currently: assumptions must be positive'  # TODOfut: support for safety bad traces
-    # else:
-    #     if is_liveness(gff):
-    #         logger.info('LIVENESS automaton!')
-    #         if not spec.is_positive:
-    #             gff = complement_gff(gff)
-    #     else:
-    #         logger.info('SAFETY automaton!')
-    #         # we could also support good traces by complementing the input automaton,
-    #         # but this can explode (in # of states, but unlikely comput expensive),
-    #         # and we want to keep the original encoding (which is likely consice)
-    #         assert not spec.is_positive, 'safety only as bad traces is supported'
-
-    # gff = minimize_acc_gff(simplify_gff(determenize_gff(gff)))
-    # TODOopt: try minimize_acc(simplify(minimize_acc(determenize(..)))
 
 
-def generate_name_for_spec(spec:PropertySpec) -> str:
-    res = 'spec_%s' % re.sub('\W', '_', spec.desc)
+def generate_name_for_property_module(spec:PropertySpec) -> str:
+    res = 'module_%s' % re.sub('\W', '_', spec.desc)
     return res
 
 
-def build_spec_module(spec:PropertySpec, signals_and_macros) -> SmvModule:
-    assert 0, 'call strip somewhere'
+def build_spec_module(spec:PropertySpec) -> SmvModule:
     automaton = build_automaton(spec)
 
-    name = generate_name_for_spec(spec)
-    smv_module = det_automaton_to_smv_module(signals_and_macros, automaton, name, spec.desc)
+    name = generate_name_for_property_module(spec)
+    smv_module = det_automaton_to_smv_module(automaton, name, spec.desc)
 
     return smv_module
 
@@ -420,226 +349,234 @@ esac;
     return SmvModule(name, signals, '', result, False, True)
 
 
-def my_build_aggregate_module(module_name,
-                              asmpt_modules,
-                              grnt_modules,
-                              orig_clean_module:str,
-                              out:StrAwareList) -> (list, list, list):
-    module = StrAwareList()
-    module += orig_clean_module
-    module.sep()
+# def my_build_aggregate_module(module_name,
+#                               asmpt_modules,
+#                               grnt_modules,
+#                               orig_clean_module:str,
+#                               out:StrAwareList) -> (list, list, list):
+#     module = StrAwareList()
+#     module += orig_clean_module
+#     module.sep()
+#
+#     if asmpt_modules:
+#         module += "VAR --invariant modules"
+#         for m in asmpt_modules:
+#             assert set(m.module_inputs).issubset(signals_and_macros)
+#             module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+#         module.sep()
+#
+#     module += "VAR --spec modules"
+#     for m in grnt_modules:
+#         assert set(m.module_inputs).issubset(signals_and_macros)
+#         module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+#         assert m.has_bad or m.has_fair, str(m)
+#
+#     module += "VAR --module that turns many liveness signals into the single one"
+#     if counting_fairness_module:
+#         fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
+#         module += '  sys_prop_%s : %s(%s);' % \
+#                   (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
+#
+#     module.sep()
+#
+#     # assumptions
+#     inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
+#                                   for m in env_modules)
+#     if introduce_signals_instead_of_sections:
+#         module += "DEFINE"
+#         module += '  {inv_signal_name} := ({inv_violated_def});'.format(
+#             inv_signal_name=INVAR_SIGNAL_NAME,
+#             inv_violated_def=inv_violated_def)
+#     else:
+#         module += "INVAR"
+#         module += '  !(%s)' % inv_violated_def
+#     module.sep()
+#
+#     # safety
+#     bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
+#                                   for m in filter(lambda m: m.has_bad, sys_modules))
+#     if introduce_signals_instead_of_sections:
+#         module += 'DEFINE'
+#         module += '  {bad_signal_name} := {bad_def};'.format(
+#             bad_signal_name=BAD_SIGNAL_NAME,
+#             bad_def=bad_def)
+#     else:
+#         if find(lambda m: m.has_bad, sys_modules) != -1:
+#             module += "SPEC"
+#             module += '  AG !(%s)' % bad_def
+#             module.sep()
+#
+#     # liveness
+#     if counting_fairness_module:
+#         if introduce_signals_instead_of_sections:
+#             module += "DEFINE"
+#             module += '  {just_sig_name} := {just_sig_def};'.format(
+#                 just_sig_name=JUSTICE_SIGNAL_NAME,
+#                 just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
+#         else:
+#             module += "FAIRNESS"
+#             module += '  sys_prop_%s.fair' % counting_fairness_module.name
+#
+#         module.sep()
+#
+#     return module
+
+
+# def build_aggregate_module(orig_clean_module:SmvModule,
+#                            asmpt_modules,
+#                            grnt_modules,
+#                            signals_and_macros,
+#                            counting_fairness_module:SmvModule,
+#                            introduce_signals_instead_of_sections:bool) -> SmvModule:
+#     """
+#     :return: names for
+#     (env_fall_out, env_bad, env_fair),
+#     (sys_fall_out, sys_bad, sys_fair),
+#     """
+#     module = StrAwareList()
+#     module += orig_clean_module
+#     module.sep()
+#
+#     if asmpt_modules:
+#         module += "VAR --invariant modules"
+#         for m in asmpt_modules:
+#             assert set(m.module_inputs).issubset(signals_and_macros)
+#             module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+#         module.sep()
+#
+#     module += "VAR --spec modules"
+#     for m in grnt_modules:
+#         assert set(m.module_inputs).issubset(signals_and_macros)
+#         module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+#         assert m.has_bad or m.has_fair, str(m)
+#
+#     module += "VAR --module that turns many liveness signals into the single one"
+#     if counting_fairness_module:
+#         fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
+#         module += '  sys_prop_%s : %s(%s);' % \
+#                   (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
+#
+#     module.sep()
+#
+#     # assumptions
+#     inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
+#                                   for m in env_modules)
+#     if introduce_signals_instead_of_sections:
+#         module += "DEFINE"
+#         module += '  {inv_signal_name} := ({inv_violated_def});'.format(
+#             inv_signal_name=INVAR_SIGNAL_NAME,
+#             inv_violated_def=inv_violated_def)
+#     else:
+#         module += "INVAR"
+#         module += '  !(%s)' % inv_violated_def
+#     module.sep()
+#
+#     # safety
+#     bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
+#                                   for m in filter(lambda m: m.has_bad, sys_modules))
+#     if introduce_signals_instead_of_sections:
+#         module += 'DEFINE'
+#         module += '  {bad_signal_name} := {bad_def};'.format(
+#             bad_signal_name=BAD_SIGNAL_NAME,
+#             bad_def=bad_def)
+#     else:
+#         if find(lambda m: m.has_bad, sys_modules) != -1:
+#             module += "SPEC"
+#             module += '  AG !(%s)' % bad_def
+#             module.sep()
+#
+#     # liveness
+#     if counting_fairness_module:
+#         if introduce_signals_instead_of_sections:
+#             module += "DEFINE"
+#             module += '  {just_sig_name} := {just_sig_def};'.format(
+#                 just_sig_name=JUSTICE_SIGNAL_NAME,
+#                 just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
+#         else:
+#             module += "FAIRNESS"
+#             module += '  sys_prop_%s.fair' % counting_fairness_module.name
+#
+#         module.sep()
+#
+#     return module
+
+
+def compose_smv(non_spec_modules,
+                asmpt_modules, grnt_modules,
+                clean_main_module:SmvModule,
+                counting_fairness_module:SmvModule) -> StrAwareList:
+    smv = StrAwareList()
+
+    for m in non_spec_modules:
+        smv += m.module_str
+        smv.sep()
+
+    for am in asmpt_modules:
+        smv += am.module_str
+        smv.sep()
+
+    for gm in grnt_modules:
+        smv += gm.module_str
+        smv.sep()
+
+    smv += counting_fairness_module.module_str
+
+    # the main module
+    smv += clean_main_module.module_str
+    smv.sep()
 
     if asmpt_modules:
-        module += "VAR --invariant modules"
+        smv += "VAR --assumptions modules"
         for m in asmpt_modules:
-            assert set(m.module_inputs).issubset(signals_and_macros)
-            module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-        module.sep()
+            smv += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+            assert (not m.has_fair) and m.has_bad, str(m)
+        smv.sep()
 
-    module += "VAR --spec modules"
+        smv += 'INVAR'
+        smv += '  !(%s)' % ' | '.join('env_prop_%s.bad' % m.name
+                                      for m in asmpt_modules)
+        smv.sep()
+
+    smv += "VAR --guarantees modules"
     for m in grnt_modules:
-        assert set(m.module_inputs).issubset(signals_and_macros)
-        module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-        assert m.has_bad or m.has_fair, str(m)
-
-    module += "VAR --module that turns many liveness signals into the single one"
-    if counting_fairness_module:
-        fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
-        module += '  sys_prop_%s : %s(%s);' % \
-                  (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
-
-    module.sep()
-
-    # assumptions
-    inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
-                                  for m in env_modules)
-    if introduce_signals_instead_of_sections:
-        module += "DEFINE"
-        module += '  {inv_signal_name} := ({inv_violated_def});'.format(
-            inv_signal_name=INVAR_SIGNAL_NAME,
-            inv_violated_def=inv_violated_def)
-    else:
-        module += "INVAR"
-        module += '  !(%s)' % inv_violated_def
-    module.sep()
-
-    # safety
-    bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-                                  for m in filter(lambda m: m.has_bad, sys_modules))
-    if introduce_signals_instead_of_sections:
-        module += 'DEFINE'
-        module += '  {bad_signal_name} := {bad_def};'.format(
-            bad_signal_name=BAD_SIGNAL_NAME,
-            bad_def=bad_def)
-    else:
-        if find(lambda m: m.has_bad, sys_modules) != -1:
-            module += "SPEC"
-            module += '  AG !(%s)' % bad_def
-            module.sep()
-
-    # liveness
-    if counting_fairness_module:
-        if introduce_signals_instead_of_sections:
-            module += "DEFINE"
-            module += '  {just_sig_name} := {just_sig_def};'.format(
-                just_sig_name=JUSTICE_SIGNAL_NAME,
-                just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
-        else:
-            module += "FAIRNESS"
-            module += '  sys_prop_%s.fair' % counting_fairness_module.name
-
-        module.sep()
-
-    return module
-
-
-def build_main_aggregate_module():
-    pass
-    CURRENT: we need to track all object instances
-             of types that contain a spec inside???
-
-
-def build_main_module(clean_main_module:SmvModule, sub_modules) -> SmvModule:
-    module_str = StrAwareList()
-
-
-
-
-def build_aggregate_module(orig_clean_module:SmvModule,
-                           asmpt_modules,
-                           grnt_modules,
-                           signals_and_macros,
-                           counting_fairness_module:SmvModule,
-                           introduce_signals_instead_of_sections:bool) -> SmvModule:
-    """
-    :return: names for
-    (env_fall_out, env_bad, env_fair),
-    (sys_fall_out, sys_bad, sys_fair),
-    """
-    module = StrAwareList()
-    module += orig_clean_module
-    module.sep()
-
-    if asmpt_modules:
-        module += "VAR --invariant modules"
-        for m in asmpt_modules:
-            assert set(m.module_inputs).issubset(signals_and_macros)
-            module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-        module.sep()
-
-    module += "VAR --spec modules"
-    for m in grnt_modules:
-        assert set(m.module_inputs).issubset(signals_and_macros)
-        module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-        assert m.has_bad or m.has_fair, str(m)
-
-    module += "VAR --module that turns many liveness signals into the single one"
-    if counting_fairness_module:
-        fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
-        module += '  sys_prop_%s : %s(%s);' % \
-                  (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
-
-    module.sep()
-
-    # assumptions
-    inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
-                                  for m in env_modules)
-    if introduce_signals_instead_of_sections:
-        module += "DEFINE"
-        module += '  {inv_signal_name} := ({inv_violated_def});'.format(
-            inv_signal_name=INVAR_SIGNAL_NAME,
-            inv_violated_def=inv_violated_def)
-    else:
-        module += "INVAR"
-        module += '  !(%s)' % inv_violated_def
-    module.sep()
-
-    # safety
-    bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-                                  for m in filter(lambda m: m.has_bad, sys_modules))
-    if introduce_signals_instead_of_sections:
-        module += 'DEFINE'
-        module += '  {bad_signal_name} := {bad_def};'.format(
-            bad_signal_name=BAD_SIGNAL_NAME,
-            bad_def=bad_def)
-    else:
-        if find(lambda m: m.has_bad, sys_modules) != -1:
-            module += "SPEC"
-            module += '  AG !(%s)' % bad_def
-            module.sep()
-
-    # liveness
-    if counting_fairness_module:
-        if introduce_signals_instead_of_sections:
-            module += "DEFINE"
-            module += '  {just_sig_name} := {just_sig_def};'.format(
-                just_sig_name=JUSTICE_SIGNAL_NAME,
-                just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
-        else:
-            module += "FAIRNESS"
-            module += '  sys_prop_%s.fair' % counting_fairness_module.name
-
-        module.sep()
-
-    return module
-
-
-def build_main_module(env_modules, sys_modules,
-                      user_main_module:str,
-                      signals_and_macros,
-                      counting_fairness_module:SmvModule) -> StrAwareList:
-    main_module = StrAwareList()
-    main_module += user_main_module
-    main_module.sep()
-
-    if env_modules:
-        main_module += "VAR --invariant modules"
-        for m in env_modules:
-            assert set(m.module_inputs).issubset(signals_and_macros)
-            main_module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-        main_module.sep()
-
-        main_module += "INVAR"
-        main_module += '  !(%s)' % ' | '.join('env_prop_%s.fall_out' % m.name for m in env_modules)  # 'bad' and 'fair' do not matter for inv
-        main_module.sep()
-
-    main_module += "VAR --spec modules"
-    for m in sys_modules:
-        assert set(m.module_inputs).issubset(signals_and_macros)
-        main_module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
+        smv += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
         assert m.has_bad or m.has_fair, str(m)
 
     if counting_fairness_module:
-        fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
-        main_module += '  sys_prop_%s : %s(%s);' % \
-                       (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
-    main_module.sep()
+        fair_signals = ['sys_prop_%s.fair'%m.name
+                        for m in filter(lambda m: m.has_fair, grnt_modules)]
+        smv += '  sys_prop_%s : %s(%s);' % \
+                       (counting_fairness_module.name,
+                        counting_fairness_module.name,
+                        ','.join(fair_signals))
+    smv.sep()
 
-    if find(lambda m: m.has_bad, sys_modules) != -1:
-        main_module += "SPEC"
-        main_module += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-                                                 for m in filter(lambda m: m.has_bad, sys_modules))
-        main_module.sep()
+    if find(lambda m: m.has_bad, grnt_modules) != -1:
+        smv += "SPEC"
+        smv += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
+                                         for m in filter(lambda m: m.has_bad, grnt_modules))
+        smv.sep()
 
     if counting_fairness_module:
-        main_module += "FAIRNESS"
-        main_module += '  sys_prop_%s.fair' % counting_fairness_module.name
+        smv += "FAIRNESS"
+        smv += '  sys_prop_%s.fair' % counting_fairness_module.name
 
-    return main_module
+    return smv
 
 
-def strip_unused_symbols(spec_property:PropertySpec):  # GOAL may produce automaton
-                                                       # whose alphabet contains symbols
-                                                       # not used in any transition labels
-                                                       # here we remove unused propositions
-                                                       # from the alphabet
-    lines = spec_property.data.splitlines()
+def strip_unused_symbols(gff_automaton_text:str) -> str:
+    # GOAL may produce automaton
+    # whose alphabet contains symbols
+    # not used in any transition labels
+    # here we remove unused propositions from the alphabet
+
+    lines = gff_automaton_text.splitlines()
 
     alphabet_start = find(lambda l: '<Alphabet' in l, lines)
     alphabet_end = find(lambda l: '</Alphabet' in l, lines)
 
     if alphabet_start == -1 or alphabet_end == -1:
-        return spec_property
+        return gff_automaton_text
 
     trans_start = find(lambda l: '<TransitionSet' in l, lines)
     trans_end = find(lambda l: '</TransitionsSet' in l, lines)
@@ -650,113 +587,98 @@ def strip_unused_symbols(spec_property:PropertySpec):  # GOAL may produce automa
     for lbl_line in lbl_lines:
         # <Label>~g ~r</Label>
         #: :type: str
-        lbls = lbl_line[lbl_line.find('>')+1 : lbl_line.find('<', lbl_line.find('>'))]
+        lbls = lbl_line[lbl_line.find('>')+1:
+                        lbl_line.find('<', lbl_line.find('>'))]
         lbls = stripped(lbls.replace('~', '').split())
         used_labels.update(lbls)
 
-    #: :type: list
+    # now construct the result
     result = lines[:alphabet_start+1]
     for lbl in filter(lambda l: l!='True', used_labels):
         result.append("        <Proposition>%s</Proposition>" % lbl)
 
     result += lines[alphabet_end:]
 
-    spec_property.data = '\n'.join(result)
+    return '\n'.join(result)
 
 
-def my_main(smv_lines, base_dir):
-    module_a_g_by_name = parse_smv(smv_lines, base_dir)
-
-    aggregate_modules = list()
-    final_smv = StrAwareList()
-    fall_bad_fair_by_module = dict()
-
-    asmpt_bad_signals = list()
-
-    asmpt_fair_signals = list()
-    grnt_bad_signals = list()
-    grnt_fair_signals = list()
-
-    for name, (clean_module, assumptions, guarantees) in module_a_g_by_name.items():
-        # for p in spec.properties:  # TODO
-        #     strip_unused_symbols(p)
-
-        asmpt_modules = [build_spec_module(a, a.signals + a.macros_signals)
-                         for a in assumptions]
-
-        asmpt_bad_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
-        asmpt_fair_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
-
-        grnt_modules = [build_spec_module(g, g.signals + g.macros_signals)
-                        for g in guarantees]
-
-        fall_bad_fair_by_module[name] = my_build_aggregate_module(name,
-                                                                  asmpt_modules,
-                                                                  grnt_modules,
-                                                                  clean_module,
-                                                                  final_smv)
-
-    modules_with_assumptions = tuple(filter(lambda m: m.has_assumptions, aggregate_modules))
-    modules_with_guarantees = tuple(filter(lambda m: m.has_bad or m.has_fair, aggregate_modules))
-    main_counting_fairness = len(tuple(filter(lambda m: m.has_fair, aggregate_modules)))
-    main_module = build_aggregate_module('main',
-                                         modules_with_assumptions, modules_with_guarantees,
-                                         orig_main_module,
-                                         main_counting_fairness,
-                                         False)
-
-    final_smv += main_module.module_str
-    print(final_smv.str())
-
-    return 0
+# def my_main(smv_lines, base_dir):
+#     module_a_g_by_name = parse_smv(smv_lines, base_dir)
+#
+#     aggregate_modules = list()
+#     final_smv = StrAwareList()
+#     fall_bad_fair_by_module = dict()
+#
+#     asmpt_bad_signals = list()
+#
+#     asmpt_fair_signals = list()
+#     grnt_bad_signals = list()
+#     grnt_fair_signals = list()
+#
+#     for name, (clean_module, assumptions, guarantees) in module_a_g_by_name.items():
+#         asmpt_modules = [build_spec_module(a, a.signals + a.macros_signals)
+#                          for a in assumptions]
+#
+#         asmpt_bad_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
+#         asmpt_fair_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
+#
+#         grnt_modules = [build_spec_module(g, g.signals + g.macros_signals)
+#                         for g in guarantees]
+#
+#         fall_bad_fair_by_module[name] = my_build_aggregate_module(name,
+#                                                                   asmpt_modules,
+#                                                                   grnt_modules,
+#                                                                   clean_module,
+#                                                                   final_smv)
+#
+#     modules_with_assumptions = tuple(filter(lambda m: m.has_assumptions, aggregate_modules))
+#     modules_with_guarantees = tuple(filter(lambda m: m.has_bad or m.has_fair, aggregate_modules))
+#     main_counting_fairness = len(tuple(filter(lambda m: m.has_fair, aggregate_modules)))
+#     main_module = build_aggregate_module('main',
+#                                          modules_with_assumptions, modules_with_guarantees,
+#                                          orig_main_module,
+#                                          main_counting_fairness,
+#                                          False)
+#
+#     final_smv += main_module.module_str
+#     print(final_smv.str())
+#
+#     return 0
 
 
 def main(smv_lines, base_dir):
     module_a_g_by_name = parse_smv(smv_lines, base_dir)
 
-    aggregate_modules = list()
-    final_smv = StrAwareList()
-    for name, (clean_module, assumptions, guarantees) in module_a_g_by_name.items():
-        # for p in spec.properties:  # TODO
-        #     strip_unused_symbols(p)
+    name_d_a_g_records = tuple(filter(lambda n_d_a_g: len(n_d_a_g[1][1]) > 0 or len(n_d_a_g[1][2]) > 0,
+                                      module_a_g_by_name.items()))
 
-        asmpt_modules = [build_spec_module(a, a.signals + a.macros_signals)
-                         for a in assumptions]
-        grnt_modules = [build_spec_module(g, g.signals + g.macros_signals)
-                        for g in guarantees]
+    assert len(name_d_a_g_records) == 1, "we support exactly one module with a specification" + str(name_d_a_g_records)
 
-        final_smv += ['-- %s\n' % (s.name + s.desc) + s.module_str
-                      for s in grnt_modules + asmpt_modules]
-        final_smv.sep()
+    name, (clean_main_module, assumptions, guarantees) = name_d_a_g_records[0]
 
-        counting_justice_module = None
-        nof_sys_live_modules = len(list(filter(lambda m: m.has_fair, grnt_modules)))
-        if nof_sys_live_modules:
-            counting_justice_module = build_counting_fairness_module(nof_sys_live_modules,
-                                                                     'counting_justice_'+name)
-            final_smv += counting_justice_module.module_str
+    asmpt_modules = list(map(build_spec_module, assumptions))
+    grnt_modules = list(map(build_spec_module, guarantees))
 
-        aggregate_module = build_aggregate_module(name,
-                                                  asmpt_modules, grnt_modules,
-                                                  clean_module,
-                                                  counting_justice_module,
-                                                  True)
+    non_spec_modules = tuple(map(lambda n_m_a_g: n_m_a_g[1][0],  # (name, (module,assumptions,guarantees))
+                                 filter(lambda n_m_a_g: n_m_a_g[0] != name,
+                                        module_a_g_by_name.items())))
 
-        final_smv += aggregate_module.module_str
+    counting_justice_module = None
+    nof_sys_live_modules = len(list(filter(lambda m: m.has_fair, grnt_modules)))
+    if nof_sys_live_modules:
+        counting_justice_module = build_counting_fairness_module(nof_sys_live_modules,
+                                                                 'counting_justice_'+name)
 
-        aggregate_modules.append(final_smv)
+    # for m in asmpt_modules + grnt_modules:
+    #     assert set(m.module_inputs).issubset(signals_and_macros)
 
-    modules_with_assumptions = tuple(filter(lambda m: m.has_assumptions, aggregate_modules))
-    modules_with_guarantees = tuple(filter(lambda m: m.has_bad or m.has_fair, aggregate_modules))
-    main_counting_fairness = len(tuple(filter(lambda m: m.has_fair, aggregate_modules)))
-    main_module = build_aggregate_module('main',
-                                         modules_with_assumptions, modules_with_guarantees,
-                                         orig_main_module,
-                                         main_counting_fairness,
-                                         False)
+    final_smv = compose_smv(non_spec_modules,
+                            asmpt_modules,
+                            grnt_modules,
+                            clean_main_module,
+                            counting_justice_module)
 
-    final_smv += main_module.module_str
-    print(final_smv.str())
+    print(str(final_smv))
 
     return 0
 
@@ -770,7 +692,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logger = setup_logging(__name__)
+    logger = setup_logging(__name__, verbose_level=1)
     logger.info("run with args:%s", args)
 
     exit(main(args.smv.read().splitlines(),

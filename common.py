@@ -1,3 +1,4 @@
+from functools import lru_cache
 import xml.etree.ElementTree as ET
 import sys
 import logging
@@ -5,38 +6,77 @@ import logging
 from sympy import true, sympify
 from sympy.core.symbol import Symbol
 from sympy.logic.boolalg import simplify_logic, false
+from ansistrm import ColorizingStreamHandler
 
 
-def setup_logging(logger_name):
-    logging.basicConfig(format="%(asctime)-10s%(message)s",
-                        datefmt="%H:%M:%S",
-                        level=logging.DEBUG,
-                        stream=sys.stderr)
-    return logging.getLogger(logger_name)
+def setup_logging(logger_name, verbose_level:int=0, filename:str=None):
+    level = None
+    if verbose_level == -1:
+        level = logging.CRITICAL
+    if verbose_level is 0:
+        level = logging.INFO
+    elif verbose_level >= 1:
+        level = logging.DEBUG
+
+    formatter = logging.Formatter(fmt="%(asctime)-10s%(message)s", datefmt="%H:%M:%S")
+
+    stdout_handler = ColorizingStreamHandler()
+    stdout_handler.setFormatter(formatter)
+    stdout_handler.stream = sys.stdout
+
+    if not filename:
+        filename = 'last.log'
+    file_handler = logging.FileHandler(filename=filename, mode='w')
+    file_handler.setFormatter(formatter)
+
+    root = logging.getLogger()
+    root.addHandler(stdout_handler)
+    root.addHandler(file_handler)
+
+    root.setLevel(level)
+
+    return logging.getLogger(__name__)
 
 
 class Automaton:
-    def __init__(self, states, init_state, acc_live_states, acc_dead_states, edges:'list of ((src,dst),set of labels) where label is a tuple of literals'):
+    """
+    An automaton has three types of states: `acc`, `dead`, normal.
+    For a run to be accepted, it should satisfy:
+      G(!dead) & GF(acc)
+    Thus, in the automaton `dead` states has the property that they are `trap` states.
+    If there are no `acc` states, acc is set to True.
+    If there are no `dead` states, dead is set to False.
+    """
+    def __init__(self,
+                 states,
+                 init_state,
+                 acc_states,
+                 dead_states,
+                 is_safety,  # `safety` means an automaton encodes rejecting finite traces
+                 edges:'tuple of ((src,dst),set of labels) where label is a tuple of literals'):
         self.states = states
         self.init_state = init_state
-        self.acc_live_states = acc_live_states
-        self.acc_dead_states = acc_dead_states
+        self.acc_states = acc_states
+        self.dead_states = dead_states
         self.edges = edges
+        self.propositions = self._get_propositions()
+        self.is_safety = is_safety
 
-        assert self.acc_live_states or self.acc_dead_states
+        assert self.acc_states
+        assert not (self.is_safety and len(self.dead_states) == 0), str(self)
 
-    def is_safety(self):   # heuristics
-        if are_all_states_accepting(self):
-            return True
-        return not self.acc_live_states
+    def _get_propositions(self):
+        propositions = set()
+        for ((src,dst), labels) in self.edges:
+            for label in labels:
+                for lit in label:
+                    atom = lit.strip('~').strip('!')
+                    propositions.add(atom)
+        return tuple(propositions)   # fixing the order
 
     def __str__(self):
-        return 'states: %s, init_state: %s, acc_live_states: %s, acc_trap_states: %s, edges: %s' % \
-            (self.states, self.init_state, self.acc_live_states, self.acc_dead_states, self.edges)
-
-
-def are_all_states_accepting(automaton:Automaton):
-    return set(automaton.states) == set(automaton.acc_live_states).union(automaton.acc_dead_states)
+        return 'states: %s, init_state: %s, acc_states: %s, edges: %s' % \
+            (self.states, self.init_state, self.acc_states, self.edges)
 
 
 def reduces_to_true(clauses):
@@ -74,7 +114,8 @@ def reduces_to_true(clauses):
     return simplify_logic(expr) == true
 
 
-def gff_2_automaton(gff_xml:str) -> Automaton:  # TODOopt: (boolean) simplify transitions labels
+def gff_2_automaton(gff_xml:str):  # -> init, states, edges (dict (src,dst) |-> labels), acc
+    # TODOopt: (boolean) simplify transitions labels
     # """
     # >>> print(gff_2_automaton(readfile('/tmp/tmp.gff')))
     # """
@@ -98,13 +139,4 @@ def gff_2_automaton(gff_xml:str) -> Automaton:  # TODOopt: (boolean) simplify tr
 
     acc_states = set(elem.text for elem in root.find('Acc').iter('StateID'))
 
-    acc_trap_states = set()
-    for s in acc_states:
-        s_edges = edges.get((s,s))
-        if s_edges:
-            if reduces_to_true(s_edges):
-                acc_trap_states.add(s)  # TODOopt: also replace edges with one trivial
-
-    acc_states.difference_update(acc_trap_states)
-
-    return Automaton(states, init_state, acc_states, acc_trap_states, list(edges.items()))
+    return init_state, states, edges, acc_states

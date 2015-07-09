@@ -1,10 +1,22 @@
 import re
+from python_ext import find_all, readfile
 
-from python_ext import find, find_all, readfile
-from spec_2_smv import get_guarded_block, get_variables
 
 ENV_AUTOMATON_SPEC = "ENV_AUTOMATON_SPEC"
-SYS_AUTOMATON_SPEC = "ENV_AUTOMATON_SPEC"
+SYS_AUTOMATON_SPEC = "SYS_AUTOMATON_SPEC"
+
+
+class SmvModule:
+    def __init__(self, name, module_inputs, desc, module_str, has_bad, has_fair):
+        self.module_inputs = tuple(module_inputs)
+        self.name = name
+        self.desc = desc
+        self.module_str = module_str
+        self.has_bad = has_bad
+        self.has_fair = has_fair
+
+    def __str__(self):
+        return 'module: %s (%s), def:\n%s' %(self.name, self.desc, self.module_str)
 
 
 class PropertySpec:
@@ -31,35 +43,20 @@ class PropertySpec:
 
     __repr__ = __str__
 
-    @property
-    def is_bad_trace(self):   # TODO: refactor: use is_guarantee
-        return not self.is_positive
 
-    @property
-    def is_formula(self):
-        return self.input_type == "qptl"
+# class ModuleSpecification:
+#     def __init__(self, module_name,
+#                  inputs, outputs, macros_signals,
+#                  prop_specs):
+#         self.outputs = tuple(outputs)
+#         self.inputs = tuple(inputs)
+#         self.macros_signals = tuple(macros_signals)
+#         self.prop_specs = tuple(prop_specs)
+#
+#     @property
+#     def signals(self):
+#         return self.inputs + self.outputs
 
-    @property
-    def is_automaton(self):
-        return self.input_type == "automaton"
-
-    @property
-    def to_be_assumption(self):    # TODO: refactor: use is_guarantee
-        return not self.is_guarantee
-
-
-class ModuleSpecification:
-    def __init__(self, module_name,
-                 inputs, outputs, macros_signals,
-                 prop_specs):
-        self.outputs = tuple(outputs)
-        self.inputs = tuple(inputs)
-        self.macros_signals = tuple(macros_signals)
-        self.prop_specs = tuple(prop_specs)
-
-    @property
-    def signals(self):
-        return self.inputs + self.outputs
 
 def get_all_sections(lines, section_name):
     inside_section = False
@@ -88,13 +85,14 @@ def is_section_declaration(l):
     return False
 
 
-def parse_smv_module(module_lines, module_name, base_dir) -> (list,list,list):
+def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
     lines_without_spec = []
     assumptions = []
     guarantees = []
 
+    module_name = module_inputs = None
     now_parsing = False
-    cur_data_list = None
+    is_parsing_guarantees = None
     for l_raw in module_lines:
         l = l_raw.strip()
         if not l:
@@ -110,22 +108,34 @@ def parse_smv_module(module_lines, module_name, base_dir) -> (list,list,list):
         if is_section_declaration(l):
             if l in [ENV_AUTOMATON_SPEC, SYS_AUTOMATON_SPEC]:
                 now_parsing = True
-                cur_data_list = (assumptions, guarantees)[l == SYS_AUTOMATON_SPEC]
+                is_parsing_guarantees = l == SYS_AUTOMATON_SPEC
+
+            elif 'MODULE' in l:
+                # simple parser: assumes all inputs on the same line:
+                match = re.fullmatch('MODULE *([\w_@\.]+) *(\([\w_@\. ,]*\))? *(--.*)*', l)
+                assert match, 'uknown format\n' + l
+                assert len(match.groups()) == 3, 'unknown format\n' + l
+                module_name = match.groups()[0]
+                inputs_token = match.groups()[1]
+                module_inputs = re.findall('[\w_\.@]+', inputs_token or '')
+
             else:
                 now_parsing = False
         else:
             if now_parsing:
-                file_content = readfile(base_dir + '/' + l.strip('!').strip())
+                file_name = re.fullmatch('!? *([\w_\-\.]+\.gff).*', l).groups()[0]
+                file_content = readfile(base_dir + '/' + file_name)
                 data = PropertySpec(l,
-                                    l.startswith('!'),
-                                    cur_data_list==guarantees,
+                                    not l.startswith('!'),
+                                    is_parsing_guarantees,
                                     file_content)
-                cur_data_list.append(data)
+                (assumptions, guarantees)[is_parsing_guarantees].append(data)
 
         if not now_parsing:
             lines_without_spec.append(l_raw)
 
-    return lines_without_spec, assumptions, guarantees
+    module = SmvModule(module_name, module_inputs, '', '\n'.join(lines_without_spec), False, False)
+    return module, assumptions, guarantees
 
 
 def parse_smv(smv_lines:list, base_dir) -> dict:   # {module_name: Specification}
@@ -138,28 +148,23 @@ def parse_smv(smv_lines:list, base_dir) -> dict:   # {module_name: Specification
             else \
             len(smv_lines)
 
-        module_name = re.fullmatch('MODULE *([a-zA-Z0-9_@]+) *(.*',
-                                   smv_lines[start].strip()
-                                   ).groups()[0]
-
         module_without_spec, assumptions, guarantees = \
-            parse_smv_module(smv_lines[start:end],
-                             module_name,
-                             base_dir)
+            parse_smv_module(smv_lines[start:end], base_dir)
 
-        lines_a_g_by_module_name[module_name] = (module_without_spec, assumptions, guarantees)
+        lines_a_g_by_module_name[module_without_spec.name] = (module_without_spec, assumptions, guarantees)
 
     return lines_a_g_by_module_name
 
 
-def parse_macros_signals(define_section:str) -> list:
-    all_signals = list()
-    lines = define_section.splitlines()
-    for l in lines:
-        match = re.fullmatch(' *([a-zA-Z0-9_@]+) *: *=.*', l)    # matching "  ided_92 := ..."
-        if match:
-            signals = match.groups()
-            assert len(signals) == 1, str(signals) + ' :found on: ' + l
-            all_signals.append(signals[0])
-
-    return all_signals
+# def parse_macros_signals(define_section:str) -> list:  # TODO: good to have: check that the signals used in
+#                                                        # the automata are defined in the module
+#    all_signals = list()
+#    lines = define_section.splitlines()
+#    for l in lines:
+#        match = re.fullmatch('([a-zA-Z0-9_@]+) *: *=.*', l.strip())    # matching "ided_92 := ..."
+#        if match:
+#            signals = match.groups()
+#            assert len(signals) == 1, str(signals) + ' :found on: ' + l
+#            all_signals.append(signals[0])
+#
+#    return all_signals

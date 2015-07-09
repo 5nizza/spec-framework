@@ -5,10 +5,11 @@ import subprocess
 import sys
 import os
 import argparse
-from nose.tools import assert_equal
-from python_ext import find, readfile, stripped
-from spec_parser import is_section_declaration
 
+from nose.tools import assert_equal
+
+from python_ext import find, readfile
+from spec_parser import is_section_declaration
 
 
 def get_controllable_var_section(smv_lines) -> list:
@@ -64,7 +65,8 @@ def main(smv_spec_file_name):
                                       shell=True),
               encoding=sys.getdefaultencoding())
 
-    inputs = get_controllable(readfile(smv_spec_file_name).splitlines())
+    outputs = get_controllable(readfile(smv_spec_file_name).splitlines())
+    assert outputs, 'there are no controllable signals, abort'
 
     lines = aig.splitlines()
 
@@ -77,7 +79,7 @@ def main(smv_spec_file_name):
         if not l.startswith('i'):
             break
 
-        result.append(rename(l, inputs))
+        result.append(rename(l, outputs))
         i += 1
 
     result += lines[i:]

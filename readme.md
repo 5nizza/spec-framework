@@ -17,6 +17,7 @@ Contains two conversion tools:
 # Requirements and Setup
 
 - `swig`
+
   in the directory `aiger_swig` run `make_swig.sh`
   (tested with version `2.0.11`, likely works with any `2.0.x`)
 

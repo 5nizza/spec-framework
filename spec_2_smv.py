@@ -513,7 +513,7 @@ def compose_smv(non_spec_modules,
         smv += "VAR --assumptions modules"
         for m in asmpt_modules:
             smv += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-            assert (not m.has_fair) and m.has_bad, str(m)
+            assert (not m.has_fair) and m.has_bad, str(m) + '\n Assumptions must be safety'
         smv.sep()
 
         smv += 'INVAR'

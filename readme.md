@@ -1,17 +1,23 @@
-# Specification to SYNT-AIGER converters
+# SMV format for synthesis. A converter from it to the SYNT format.
 
 Contains two conversion tools:
 
-1. From our specification format (`smv` file with goal automata files) to SYNT-AIGER-LIVE format (that we use for the synthesis with liveness tool): 
-    - the main script file is `spec_2_aig.py`
-    - that script file uses the script `spec_2_smv.py` which itself translates our specification smv format into `smv` format that can be then later understood by aiger tools
+1. From our specification format (`SMV` file with goal automata files) to 
+   SYNTCOMP with liveness guarantees format 
+   (that we use for the synthesis with liveness tool): 
+   - the main script file is `spec_2_aag.py`
+   - `spec_2_aag.py` uses `spec_2_smv.py` that translates 
+     our extended SMV format into the standard `SMV` format 
+     that can be then later understood by aiger tools
 
-2. From SYNT-AIGER-LIVE format to HWMCC format (with justice).
-
-Description of our specification format is at https://verify.iaik.tugraz.at/research/bin/view/Ausgewaehltekapitel/PARTI
+2. From the SYNTCOMP with liveness guarantees format to the HWMCC format.
 
 
 # Requirements and Setup
+
+- `swig`
+  in the directory `aiger_swig` run `make_swig.sh`
+  (tested with version `2.0.11`, likely works with any `2.0.x`)
 
 - aiger tools http://fmv.jku.at/aiger/
   Tested with version `1.9.9`.
@@ -33,10 +39,27 @@ Description of our specification format is at https://verify.iaik.tugraz.at/rese
   IIMC model checker can be downloaded at http://ecee.colorado.edu/wpmu/iimc/
 
 
-# Warning
-Not very user-friendly.
+# Run
+Run: 
+
+`./spec_2_aag.py <smv_spec_file>`
+
+
+# Examples
+Examples are in folder `tests`.
+
+
+# Tests
+
+`./run_tests.py`
+
+or 
+
+`./run_tests.py --aisy`
+
+If you get import error -- run `setup.sh` from `aisy`.
 
 
 # Authors
-Ayrat Khalimov and the SCOS group at TU Graz.
-Email on gmail: ayrat.khalimov.
+Ayrat Khalimov
+Email at gmail: ayrat.khalimov.

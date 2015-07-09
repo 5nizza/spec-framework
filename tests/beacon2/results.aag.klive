@@ -1,0 +1,109 @@
+aag 84 2 17 1 65
+2
+4
+6 6
+8 40
+10 10
+12 42
+14 14
+16 44
+18 18
+20 46
+22 90
+24 102
+26 111
+28 122
+30 128
+32 134
+34 136
+36 143
+38 163
+169
+40 7 4
+42 11 2
+44 15 5
+46 19 3
+48 27 25
+50 48 23
+52 8 7
+54 26 25
+56 54 23
+58 56 52
+60 12 11
+62 27 24
+64 62 23
+66 64 60
+68 16 15
+70 26 24
+72 70 23
+74 72 68
+76 20 19
+78 48 22
+80 78 76
+82 81 22
+84 83 75
+86 85 67
+88 86 59
+90 88 51
+92 27 23
+94 92 60
+96 95 74
+98 97 24
+100 99 59
+102 101 51
+104 75 26
+106 105 67
+108 107 59
+110 109 51
+112 34 32
+114 112 30
+116 114 28
+118 115 29
+120 119 117
+122 120 51
+124 113 31
+126 125 115
+128 126 51
+130 35 33
+132 131 113
+134 132 51
+136 51 35
+138 130 31
+140 139 28
+142 141 37
+144 8 6
+146 12 10
+148 16 14
+150 20 18
+152 49 22
+154 153 151
+156 154 149
+158 156 147
+160 158 145
+162 160 39
+164 138 28
+166 164 142
+168 166 162
+i0 controllable_beacon1
+i1 controllable_beacon2
+l0 sys_prop_spec12.state@1
+l1 sys_prop_spec12.state@0
+l2 sys_prop_spec11.state@1
+l3 sys_prop_spec11.state@0
+l4 sys_prop_spec22.state@1
+l5 sys_prop_spec22.state@0
+l6 sys_prop_spec21.state@1
+l7 sys_prop_spec21.state@0
+l8 sys_prop_counting_fairness.state@2
+l9 sys_prop_counting_fairness.state@1
+l10 sys_prop_counting_fairness.state@0
+l11 counter_latch
+l12 counter_latch
+l13 counter_latch
+l14 counter_latch
+l15 counter_latch
+l16 AIGMOVE_INVALID_LATCH
+o0 AIGER_OR
+c
+aigor
+disjunction of 1 original outputs

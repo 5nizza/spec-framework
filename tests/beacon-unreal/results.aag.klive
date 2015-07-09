@@ -1,0 +1,61 @@
+aag 44 2 9 1 33
+2
+4
+6 41
+8 42
+10 47
+12 58
+14 64
+16 70
+18 72
+20 79
+22 83
+89
+24 4 2
+26 24 8
+28 25 9
+30 24 9
+32 25 8
+34 33 31
+36 34 29
+38 36 27
+40 39 7
+42 24 7
+44 8 7
+46 44 10
+48 18 16
+50 48 14
+52 50 12
+54 51 13
+56 55 53
+58 56 10
+60 49 15
+62 61 51
+64 62 10
+66 19 17
+68 67 49
+70 68 10
+72 19 10
+74 66 15
+76 75 12
+78 77 21
+80 8 6
+82 81 23
+84 74 12
+86 84 78
+88 86 82
+i0 r
+i1 controllable_g
+l0 sys_prop_spec1.state@1
+l1 sys_prop_spec1.state@0
+l2 sys_prop_counting_fairness.state
+l3 counter_latch
+l4 counter_latch
+l5 counter_latch
+l6 counter_latch
+l7 counter_latch
+l8 AIGMOVE_INVALID_LATCH
+o0 AIGER_OR
+c
+aigor
+disjunction of 1 original outputs

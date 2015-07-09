@@ -83,6 +83,7 @@ def main(smv_spec_file_name):
     result += lines[i:]
 
     print('\n'.join(result))
+    return 0
 
 
 if __name__ == "__main__":

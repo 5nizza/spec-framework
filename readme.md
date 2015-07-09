@@ -5,6 +5,7 @@ Contains two conversion tools:
 1. From our specification format (`SMV` file with goal automata files) to 
    SYNTCOMP with liveness guarantees format 
    (that we use for the synthesis with liveness tool): 
+
    - the main script file is `spec_2_aag.py`
    - `spec_2_aag.py` uses `spec_2_smv.py` that translates 
      our extended SMV format into the standard `SMV` format 

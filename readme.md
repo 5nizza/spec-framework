@@ -6,8 +6,8 @@ Contains two conversion tools:
    SYNTCOMP with liveness guarantees format     
    (that we use for the synthesis with liveness tool): 
 
-   - the main script file is `spec_2_aag.py`
-   - `spec_2_aag.py` uses `spec_2_smv.py` that translates     
+    - the main script file is `spec_2_aag.py`
+    - `spec_2_aag.py` uses `spec_2_smv.py` that translates     
      our extended SMV format into the standard `SMV` format     
      that can be then later understood by aiger tools
 

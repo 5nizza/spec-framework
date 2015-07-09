@@ -22,7 +22,7 @@ def setup_logging(logger_name, verbose_level:int=0, filename:str=None):
 
     stdout_handler = ColorizingStreamHandler()
     stdout_handler.setFormatter(formatter)
-    stdout_handler.stream = sys.stdout
+    stdout_handler.stream = sys.stderr
 
     if not filename:
         filename = 'last.log'

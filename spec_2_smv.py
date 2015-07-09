@@ -94,23 +94,6 @@ esac;
                      not automaton.is_safety)
 
 
-def get_guarded_block(guard_comment:str, smv_lines) -> list:
-    block_start = find(lambda l: ('<%s>' % guard_comment) in l, smv_lines)
-    block_end = find(lambda l: ('</%s>' % guard_comment) in l, smv_lines)
-    return smv_lines[block_start:block_end+1]
-
-
-def get_variables(vars_comment, smv_lines) -> list:
-    vars_block = get_guarded_block(vars_comment, smv_lines)
-    stripped_lines = stripped(vars_block)
-
-    variables = set()
-    for l in filter(lambda l: ':' in l, stripped_lines):
-        variables.add(l.split(':')[0].strip())
-
-    return variables
-
-
 def get_tmp_file_name():
     tmp = NamedTemporaryFile(prefix='spec2smv_', delete=False)
     return tmp.name
@@ -519,7 +502,8 @@ def compose_smv(non_spec_modules,
         smv += gm.module_str
         smv.sep()
 
-    smv += counting_fairness_module.module_str
+    if counting_fairness_module:
+        smv += counting_fairness_module.module_str
 
     # the main module
     smv += clean_main_module.module_str

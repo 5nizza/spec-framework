@@ -76,6 +76,9 @@ def get_all_sections(lines, section_name):
 
 
 def is_section_declaration(l):
+    if not l.strip():
+        return False
+
     if l.strip() in [ENV_AUTOMATON_SPEC, SYS_AUTOMATON_SPEC, 'VAR', 'DEFINE']:
         return True
 

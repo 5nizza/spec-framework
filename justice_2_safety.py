@@ -234,6 +234,9 @@ def add_counter_to_spec(k):
     # every literal gets defined above, so now goes
     aiglib.aiger_add_bad(spec, get_new_s_lit(out_overflow_signal), 'k-liveness')
 
+    # `remove' justice signals by setting it to True
+    aiglib.set_justice_lit(spec, 0, 0, 1)
+
 
 def write_and_die():
     global spec, out, new_format
@@ -281,7 +284,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert justice liveness into k-safety. '
                                                  'Requires: smvflatten, and aiger tools in your $PATH. '
                                                  'By default, the format is with the single bad output. '
-                                                 'Careful: ignores fairness assumptions.')
+                                                 'NOTE: justice signal is replaced with True.')
 
     parser.add_argument('aiger', metavar='aiger',
                         type=str,

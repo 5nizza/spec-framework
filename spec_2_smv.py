@@ -6,11 +6,14 @@ from tempfile import NamedTemporaryFile
 import os
 
 import config
-from common import Automaton, gff_2_automaton, setup_logging, reduces_to_true
+from common import setup_logging, reduces_to_true
 from python_ext import readfile, stripped, find
 from shell import execute_shell
-from spec_parser import PropertySpec, SmvModule, parse_smv
+from spec_parser import parse_smv
 from str_aware_list import StrAwareList
+from structs import Automaton, PropertySpec, SmvModule
+
+from automata import automaton_from_spec
 
 
 INVAR_SIGNAL_NAME = "invar_violated_signal"
@@ -93,29 +96,6 @@ esac;
                      len(automaton.dead_states)>0,
                      not automaton.is_safety)
 
-
-def get_tmp_file_name():
-    tmp = NamedTemporaryFile(prefix='spec2smv_', delete=False)
-    return tmp.name
-
-
-def execute_goal_script(script:str) -> str:
-    """
-    :return: stdout as printed by GOAL
-    """
-    script_tmp_file_name = get_tmp_file_name()
-    with open(script_tmp_file_name, 'w') as f:
-        f.write(script)
-        logger.debug(script)
-    
-    cmd_to_execute = '%s batch %s' % (config.GOAL, script_tmp_file_name)
-    res, out, err = execute_shell(cmd_to_execute)
-    assert res == 0 and err == '', 'Shell call failed:\n' + cmd_to_execute + '\nres=%i\n err=%s' % (res, err)
-
-    os.remove(script_tmp_file_name)
-    return out
-
-
 # def workaround_accept_init(never_str):
 #     """
 #     Handle the special case of an accepting initial state.
@@ -165,128 +145,13 @@ def execute_goal_script(script:str) -> str:
 # #     def test_(self):
 # #         print(gff_2_never('<?xml version="1.0" encoding="UTF-8" standalone="no"?> <Structure label-on="Transition" type="FiniteStateAutomaton">     <Name/>     <Description/>     <Formula/>     <Alphabet type="Propositional">         <Proposition>init</Proposition>         <Proposition>read</Proposition>         <Proposition>readA</Proposition>         <Proposition>readB</Proposition>         <Proposition>valueT</Proposition>         <Proposition>write</Proposition>         <Proposition>writeA</Proposition>         <Proposition>writeB</Proposition>         <Proposition>writtenA</Proposition>         <Proposition>writtenB</Proposition>     </Alphabet>     <StateSet>         <State sid="11">             <Y>100</Y>             <X>380</X>             <Properties/>         </State>         <State sid="12">             <Y>100</Y>             <X>240</X>             <Properties/>         </State>         <State sid="15">             <Y>200</Y>             <X>140</X>             <Properties/>         </State>         <State sid="17">             <Y>300</Y>             <X>240</X>             <Properties/>         </State>         <State sid="19">             <Y>300</Y>             <X>380</X>             <Properties/>         </State>     </StateSet>     <InitialStateSet>         <StateID>15</StateID>     </InitialStateSet>     <TransitionSet complete="false">         <Transition tid="0">             <From>11</From>             <To>11</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="1">             <From>12</From>             <To>12</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="3">             <From>12</From>             <To>11</To>             <Label>readB</Label>             <Properties/>         </Transition>         <Transition tid="5">             <From>15</From>             <To>12</To>             <Label>writtenA</Label>             <Properties/>         </Transition>         <Transition tid="6">             <From>15</From>             <To>15</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="8">             <From>17</From>             <To>17</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="10">             <From>15</From>             <To>17</To>             <Label>writtenB</Label>             <Properties/>         </Transition>         <Transition tid="13">             <From>19</From>             <To>19</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="14">             <From>17</From>             <To>19</To>             <Label>readA</Label>             <Properties/>         </Transition>     </TransitionSet>     <Acc type="Buchi">         <StateID>11</StateID>         <StateID>19</StateID>     </Acc>     <Properties/> </Structure> '))
 
-
-def formula_2_automaton_gff(spec:PropertySpec) -> PropertySpec:
-    input_file_name = get_tmp_file_name()
-    output_file_name = get_tmp_file_name()
-
-    with open(input_file_name, 'w') as f:
-        f.write(spec.data)
-
-    goal_script = "translate QPTL -m ltl2ba -t nbw -o %s %s;" % (output_file_name, input_file_name)
-    execute_goal_script(goal_script)
-
-    automaton_data = readfile(output_file_name)
-
-    new_spec = copy.copy(spec)
-    new_spec.data = automaton_data
-    new_spec.input_type = "automaton"
-
-    os.remove(input_file_name)
-    os.remove(output_file_name)
-
-    return new_spec
-
-
-def is_liveness(raw_gff:str):
-    automaton = gff_2_automaton(raw_gff)
-    return not automaton.is_safety()
-
-
-def get_nacc_trap_states(states, acc_states, edges):
-    nacc_states = set(states).difference(acc_states)
-
-    nacc_trap_states = set()
-    for s in nacc_states:
-        s_edges = edges.get((s,s))
-        if s_edges:
-            if reduces_to_true(s_edges):
-                nacc_trap_states.add(s)  # TODOopt: also replace edges with one trivial
-
-    return nacc_trap_states
-
-
-def build_automaton(spec:PropertySpec) -> Automaton:
-    """
-    We return an automaton that is 'positive deterministic Buchi'
-    (we complement negated ones)
-    (as an optimization the automaton has `fair` and `bad` states).
-    As the last step we do `determinize`, which completes the automaton.
-    The states are of three types:
-      - acc non-trap      (aka `accepting states`)
-      - acc trap          (aka `accepting states`)
-      - non-acc non-trap  (aka `normal`)
-      - non-acc trap      (aka `dead`)
-
-    NOTE we should never fall-out of the automaton.
-    """
-
-    logger.info('build_automaton for spec: %s', spec.desc)
-
-    gff = spec.data
-    gff = strip_unused_symbols(gff)
-
-    input_file_name = get_tmp_file_name()
-    output_file_name = get_tmp_file_name()
-    output_file_name2 = get_tmp_file_name()
-
-    with open(input_file_name, 'w') as f:
-        f.write(gff)
-
-    complement_stmnt = ''
-    if not spec.is_positive:
-        complement_stmnt = '$res = complement $res;'
-
-    # determinize goes last
-    goal_script = """
-$res = load "{input_file_name}";
-{complement_stmnt}
-$res = simplify -m fair -dse -ds -rse -rs -ru -rd $res;
-$res = determinization -m bk09 $res;
-acc -min $res;
-save $res {output_file_name};
-acc -max $res;
-save $res {output_file_name2};
-""".format(complement_stmnt=complement_stmnt,
-           input_file_name=input_file_name,
-           output_file_name=output_file_name,
-           output_file_name2=output_file_name2)
-
-    execute_goal_script(goal_script)
-
-    gff = readfile(output_file_name)
-    gff2 = readfile(output_file_name2)
-
-    os.remove(input_file_name)
-    os.remove(output_file_name)
-    os.remove(output_file_name2)
-
-    # The heuristics for identifying automata for pure safety properties is:
-    # with `acc -max` the automaton for a safety property
-    # has all states accepting except for the single non-accepting trap state.
-    init_state2, states2, edges2, acc_states2 = gff_2_automaton(gff2)
-    nacc_trap_states2 = get_nacc_trap_states(states2, acc_states2, edges2)
-    if set(nacc_trap_states2).union(acc_states2) == set(states2):
-        # safety automaton
-        automaton = Automaton(states2, init_state2, acc_states2, nacc_trap_states2, True, tuple(edges2.items()))
-    else:
-        # contains both dead states, and accepting states
-        init_state, states, edges, acc_states = gff_2_automaton(gff)
-        nacc_trap_states = get_nacc_trap_states(states, acc_states, edges)
-        automaton = Automaton(states, init_state, acc_states, nacc_trap_states, False, tuple(edges.items()))
-
-    logger.info('after all manipulations: %s', ['liveness', 'safety'][automaton.is_safety])
-
-    return automaton
-
-
 def generate_name_for_property_module(spec:PropertySpec) -> str:
     res = 'module_%s' % re.sub('\W', '_', spec.desc)
     return res
 
 
 def build_spec_module(spec:PropertySpec) -> SmvModule:
-    automaton = build_automaton(spec)
+    automaton = automaton_from_spec(spec)
 
     name = generate_name_for_property_module(spec)
     smv_module = det_automaton_to_smv_module(automaton, name, spec.desc)
@@ -547,43 +412,6 @@ def compose_smv(non_spec_modules,
 
     return smv
 
-
-def strip_unused_symbols(gff_automaton_text:str) -> str:
-    # GOAL may produce automaton
-    # whose alphabet contains symbols
-    # not used in any transition labels
-    # here we remove unused propositions from the alphabet
-
-    lines = gff_automaton_text.splitlines()
-
-    alphabet_start = find(lambda l: '<Alphabet' in l, lines)
-    alphabet_end = find(lambda l: '</Alphabet' in l, lines)
-
-    if alphabet_start == -1 or alphabet_end == -1:
-        return gff_automaton_text
-
-    trans_start = find(lambda l: '<TransitionSet' in l, lines)
-    trans_end = find(lambda l: '</TransitionsSet' in l, lines)
-
-    lbl_lines = list(filter(lambda l: '<Label' in l, lines[trans_start+1:trans_end]))
-
-    used_labels = set()
-    for lbl_line in lbl_lines:
-        # <Label>~g ~r</Label>
-        #: :type: str
-        lbls = lbl_line[lbl_line.find('>')+1:
-                        lbl_line.find('<', lbl_line.find('>'))]
-        lbls = stripped(lbls.replace('~', '').split())
-        used_labels.update(lbls)
-
-    # now construct the result
-    result = lines[:alphabet_start+1]
-    for lbl in filter(lambda l: l!='True', used_labels):
-        result.append("        <Proposition>%s</Proposition>" % lbl)
-
-    result += lines[alphabet_end:]
-
-    return '\n'.join(result)
 
 
 # def my_main(smv_lines, base_dir):

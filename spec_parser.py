@@ -102,14 +102,17 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
             if now_parsing:
                 if spec_type == SpecType.GFF_SPEC:
                     file_name = re.fullmatch('!? *([\w_\-\.]+\.gff).*', l).groups()[0]
-                    file_content = readfile(base_dir + '/' + file_name)
                     data = PropertySpec(file_name,
                                         not l.startswith('!'),
                                         is_parsing_guarantees,
                                         base_dir + '/' + file_name,
                                         spec_type)
 
-                elif spec_type in (SpecType.LTL_SPEC, SpecType.RE_SPEC, SpecType.ORE_SPEC):
+                elif spec_type in (SpecType.RE_SPEC, SpecType.ORE_SPEC):
+                    is_false = l.startswith("!(") and l.endswith(")")
+                    data = PropertySpec(l, is_false, is_parsing_guarantees,
+                                        l if not is_false else l[2:-1], spec_type)
+                elif spec_type == SpecType.LTL_SPEC:
                     data = PropertySpec(l, True, is_parsing_guarantees, l, spec_type)
 
                 else:

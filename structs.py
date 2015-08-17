@@ -37,8 +37,8 @@ class Automaton:
         return tuple(propositions)   # fixing the order
 
     def __str__(self):
-        return 'states: %s, init_state: %s, acc_states: %s, edges: %s' % \
-            (self.states, self.init_state, self.acc_states, self.edges)
+        return 'states: %s, init_state: %s, acc_states: %s, dead_states: %s, edges: %s' % \
+            (self.states, self.init_state, self.acc_states, self.dead_states, self.edges)
 
 
 class SmvModule:

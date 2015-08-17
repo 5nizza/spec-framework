@@ -5,6 +5,7 @@ from xml.etree import ElementTree
 from common import reduces_to_true
 from goal_utils import get_tmp_file_name, execute_goal_script, execute_translation, strip_unused_symbols
 from python_ext import readfile
+from siregex import to_regex, regex_to_proposition
 from structs import Automaton, SpecType, PropertySpec
 
 import logging
@@ -25,7 +26,7 @@ def automaton_from_gff(gff:str, complement: bool = False) -> Automaton:
 $res = load "{input_file_name}";
 {complement_stmnt}
 $res = simplify -m fair -dse -ds -rse -rs -ru -rd $res;
-$det = determinization -m bk09 $res;
+$res = determinization -m bk09 $res;
 acc -min $res;
 save $res {output_file_name};
 acc -max $res;
@@ -40,10 +41,6 @@ save $res {output_file_name2};
     gff = readfile(output_file_name)
     gff2 = readfile(output_file_name2)
 
-    remove(input_file_name)
-    remove(output_file_name)
-    remove(output_file_name2)
-
     init_state2, states2, edges2, acc_states2 = gff_2_automaton_params(gff2)
     nacc_trap_states2 = get_nacc_trap_states(states2, acc_states2, edges2)
     if set(nacc_trap_states2).union(acc_states2) == set(states2):
@@ -56,6 +53,10 @@ save $res {output_file_name2};
         automaton = Automaton(states, init_state, acc_states, nacc_trap_states, False, tuple(edges.items()))
 
     logger.info('after all manipulations: %s', ['liveness', 'safety'][automaton.is_safety])
+
+    remove(input_file_name)
+    remove(output_file_name)
+    remove(output_file_name2)
 
     return automaton
 
@@ -77,6 +78,7 @@ def automaton_from_spec(spec:PropertySpec) -> Automaton:
     """
 
     logger.info('building automaton from spec "%s" of type %s', spec.desc, spec.type)
+    logger.debug('Full spec:\n%s', spec)
     # TODO better spec parsing
     get_gff = {SpecType.GFF_SPEC: readfile,
                SpecType.LTL_SPEC: ltl_2_automaton_gff,
@@ -137,11 +139,13 @@ def re_2_automaton_gff(regex:str) -> str:
     pass # return execute_translation("RE", regex)
 
 def ore_2_automaton_gff(omega_regex:str) -> str:
-    w_regex = sub("[!~]", "not_", omega_regex)
+    w_regex = to_regex(omega_regex)
+    w_regex = sub("([Tt]rue|\.)", "True2", w_regex)
     result = execute_translation("ORE", w_regex, "-se -sa")
-    result = sub("not_", "~", result)
     result = sub("<Alphabet type=\"Classical\">",
                  "<Alphabet type=\"Propositional\">",
                  result)
+    result = sub("True2", "True", result)
+    result = regex_to_proposition(result)
 
     return result

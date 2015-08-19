@@ -23,13 +23,17 @@ def get_all_sections(lines, section_name):
             cur_data = list()
 
 def is_section_declaration(l):
+    return l.strip() and l.split()[0].strip() in SPECS + ['VAR', 'DEFINE', 'MODULE']
+
     if not l.strip():
         return False
 
     if l.strip() in SPECS + ['VAR', 'DEFINE']:
+        print(l)
         return True
 
     if l.split()[0].strip() == 'MODULE':
+        print(l)
         return True
 
     return False
@@ -90,7 +94,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
                                         base_dir + '/' + file_name,
                                         spec_type)
 
-                elif spec_type in (SpecType.RE_SPEC, SpecType.ORE_SPEC):
+                elif spec_type == SpecType.OMEGA_REGEX_SPEC:
                     is_false = l.startswith("!(") and l.endswith(")")
                     data = PropertySpec(l, not is_false, is_parsing_guarantees,
                                         l if not is_false else l[2:-1], spec_type)

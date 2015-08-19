@@ -55,10 +55,11 @@ class SmvModule:
 
 class SpecType(Enum):
     GFF_SPEC = 1
-    AUTOMATON_SPEC = GFF_SPEC
     LTL_SPEC = 2
-    RE_SPEC = 3
-    ORE_SPEC = 4
+    OMEGA_REGEX_SPEC = 3
+    # Aliases
+    AUTOMATON_SPEC = GFF_SPEC # for legacy reasons
+    ORE_SPEC = OMEGA_REGEX_SPEC # for simplicity
 
 class PropertySpec:
     @staticmethod

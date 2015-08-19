@@ -1,1 +1,3 @@
-GOAL = "/home/ayrat/projects/GOAL-20141117/gc"
+# adjust these values to fit your
+AISY = "/path/to/aisy.py"
+GOAL = "/path/to/goal/gc"

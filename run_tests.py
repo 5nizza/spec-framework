@@ -13,7 +13,8 @@ MY_DIR = os.path.dirname(os.path.realpath(__file__))
 # Change the paths according to your setup.
 # Usage of aisy: aisy <input_file> -q
 # Returns: 10 -- realizable, 20 -- unrealizable
-AISY = '/home/ayrat/projects/aisy/aisy.py'
+from config import AISY
+
 EXIT_STATUS_REALIZABLE = 10
 EXIT_STATUS_UNREALIZABLE = 20
 

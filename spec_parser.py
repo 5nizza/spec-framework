@@ -1,17 +1,10 @@
 import re
 from python_ext import find_all, readfile
 from structs import SmvModule, PropertySpec, SpecType
+from itertools import chain
 
-
-ENV_AUTOMATON_SPEC = "ENV_AUTOMATON_SPEC"
-SYS_AUTOMATON_SPEC = "SYS_AUTOMATON_SPEC"
-ENV_LTL_SPEC = "ENV_LTL_SPEC"
-SYS_LTL_SPEC = "SYS_LTL_SPEC"
-ENV_REGEX_SPEC = "ENV_REGEX_SPEC"
-SYS_REGEX_SPEC = "SYS_REGEX_SPEC"
-ENV_ORE_SPEC = "ENV_ORE_SPEC"
-SYS_ORE_SPEC = "SYS_ORE_SPEC"
-
+# list of all possible system and environment specifications
+SPECS = list(chain(*[("ENV_{}".format(spec), "SYS_{}".format(spec)) for spec in SpecType.__members__]))
 
 def get_all_sections(lines, section_name):
     inside_section = False
@@ -29,16 +22,11 @@ def get_all_sections(lines, section_name):
             inside_section = True
             cur_data = list()
 
-
 def is_section_declaration(l):
     if not l.strip():
         return False
 
-    if l.strip() in [ENV_AUTOMATON_SPEC, SYS_AUTOMATON_SPEC,
-                     ENV_LTL_SPEC,       SYS_LTL_SPEC,
-                     ENV_REGEX_SPEC,     SYS_REGEX_SPEC,
-                     ENV_ORE_SPEC,       SYS_ORE_SPEC,
-                     'VAR', 'DEFINE']:
+    if l.strip() in SPECS + ['VAR', 'DEFINE']:
         return True
 
     if l.split()[0].strip() == 'MODULE':
@@ -46,17 +34,11 @@ def is_section_declaration(l):
 
     return False
 
-
 def get_spec_type_for_section(section_declaration:str) -> SpecType:
-    if section_declaration in [ENV_AUTOMATON_SPEC, SYS_AUTOMATON_SPEC]:
-        return SpecType.GFF_SPEC
-    if section_declaration in [ENV_LTL_SPEC, SYS_LTL_SPEC]:
-        return SpecType.LTL_SPEC
-    if section_declaration in [ENV_REGEX_SPEC, SYS_REGEX_SPEC]:
-        return SpecType.RE_SPEC
-    if section_declaration in [ENV_ORE_SPEC, SYS_ORE_SPEC]:
-        return SpecType.ORE_SPEC
-    assert False, section_declaration + " does not name a valid section."
+    assert section_declaration.endswith("_SPEC")
+    assert section_declaration.startswith("SYS_") or section_declaration.startswith("ENV_")
+    spec_name = section_declaration[4:] # magic
+    return SpecType[spec_name]
 
 def is_guarantee(section_declaration:str) -> bool:
     return section_declaration.startswith("SYS_")
@@ -110,7 +92,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
 
                 elif spec_type in (SpecType.RE_SPEC, SpecType.ORE_SPEC):
                     is_false = l.startswith("!(") and l.endswith(")")
-                    data = PropertySpec(l, is_false, is_parsing_guarantees,
+                    data = PropertySpec(l, not is_false, is_parsing_guarantees,
                                         l if not is_false else l[2:-1], spec_type)
                 elif spec_type == SpecType.LTL_SPEC:
                     data = PropertySpec(l, True, is_parsing_guarantees, l, spec_type)

@@ -1,0 +1,30 @@
+MODULE main
+
+VAR
+  r: boolean;
+  cancel: boolean;
+  four: boolean;
+
+VAR --controllable
+  g: boolean;
+
+SYS_AUTOMATON_SPEC
+--"Every reguest is granted unless cancelled"
+dbw-every-request-is-granted.gff;
+
+SYS_LTL_SPEC
+--"no initial spurious grant"
+~r --> ~g
+
+SYS_ORE_SPEC
+--"no spurious grant after initial state"
+!((r .* g+)* !r,!g+ !r,g {.})
+
+SYS_AUTOMATON_SPEC
+--"grant is lowered eventually"
+dbw-grant-is-lowered-finally.gff;
+
+--"grant is given for four ticks"
+dbw-partial-impl-four-grants.gff;
+
+-- realizable

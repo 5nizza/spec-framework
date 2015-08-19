@@ -1,0 +1,15 @@
+MODULE main
+VAR
+  r1: boolean;
+  r2: boolean;
+
+VAR --controllable
+  g1: boolean;
+  g2: boolean;
+
+SYS_LTL_SPEC
+G (r1 --> F g1)
+G (r2 --> F g2)
+~G (g1 \/ g2)
+
+-- realizable

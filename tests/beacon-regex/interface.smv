@@ -1,0 +1,12 @@
+MODULE main
+VAR --controllable
+    beacon: boolean;
+
+SYS_ORE_SPEC
+-- "Inf often high"
+{!beacon* beacon}
+
+-- "Inf often low"
+{beacon* !beacon}
+
+-- realizable

@@ -13,6 +13,7 @@ SYS_AUTOMATON_SPEC
 dbw-every-request-is-granted.gff;
 
 SYS_PLTL_SPEC
+-- #name no_spurious_grants
 -- "no spurious grants"
 G(g --> Y(~g S r | g) | r)
 

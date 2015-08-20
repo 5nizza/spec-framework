@@ -51,6 +51,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
     lines_without_spec = []
     assumptions = []
     guarantees = []
+    desc = None
 
     module_name = module_inputs = None
     now_parsing = False
@@ -65,6 +66,10 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
         if l.startswith('--'):
             if not now_parsing:
                 lines_without_spec.append(l_raw)
+            else:
+                match = re.fullmatch("(--| )*#(name|desc) ([\w_]+).*", l)
+                if(match):
+                    desc = match.groups()[2]
             continue
 
         if is_section_declaration(l):
@@ -103,6 +108,10 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
 
                 else:
                     assert False, "SpecType " + str(spec_type) + " can not be handled."
+
+                if desc:
+                    data.desc = desc
+                    desc = None
 
                 (assumptions, guarantees)[is_parsing_guarantees].append(data)
 

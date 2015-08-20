@@ -25,19 +25,6 @@ def get_all_sections(lines, section_name):
 def is_section_declaration(l):
     return l.strip() and l.split()[0].strip() in SPECS + ['VAR', 'DEFINE', 'MODULE']
 
-    if not l.strip():
-        return False
-
-    if l.strip() in SPECS + ['VAR', 'DEFINE']:
-        print(l)
-        return True
-
-    if l.split()[0].strip() == 'MODULE':
-        print(l)
-        return True
-
-    return False
-
 def get_spec_type_for_section(section_declaration:str) -> SpecType:
     assert section_declaration.endswith("_SPEC")
     assert section_declaration.startswith("SYS_") or section_declaration.startswith("ENV_")

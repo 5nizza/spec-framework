@@ -1,4 +1,4 @@
-from re import sub
+from re import search, sub
 from os import remove
 from xml.etree import ElementTree
 
@@ -35,6 +35,8 @@ save $res {output_file_name2};
            input_file_name=input_file_name,
            output_file_name=output_file_name,
            output_file_name2=output_file_name2)
+    # when complement is false, then empty line -> remove it
+    goal_script = '\n'.join(goal_script.split('\n'))
 
     execute_goal_script(goal_script)
 
@@ -138,8 +140,14 @@ def ltl_2_automaton_gff(ltl:str) -> str:
 def pltl_2_automaton_gff(ltl:str) -> str:
     return execute_translation("QPTL", ltl, "-m pltl2ba -t nbw")
 
+def check_correct_ore(omega_regex: str):
+    match = search("not_", omega_regex)
+    assert not match, "\"%s\" contains illegal sequence 'not_'" % omega_regex
+    match = search("_and_", omega_regex)
+    assert not match, "\"%s\" contains illegal sequence '_and_'" % omega_regex
 
 def ore_2_automaton_gff(omega_regex:str) -> str:
+    check_correct_ore(omega_regex)
     w_regex = to_regex(omega_regex)
     w_regex = sub("([Tt]rue|\.)", "True2", w_regex)
     result = execute_translation("ORE", w_regex, "-se -sa")

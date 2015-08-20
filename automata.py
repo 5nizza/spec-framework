@@ -82,6 +82,7 @@ def automaton_from_spec(spec:PropertySpec) -> Automaton:
     # TODO better spec parsing
     get_gff = {SpecType.GFF_SPEC: readfile,
                SpecType.LTL_SPEC: ltl_2_automaton_gff,
+               SpecType.PLTL_SPEC: pltl_2_automaton_gff,
                SpecType.OMEGA_REGEX_SPEC: ore_2_automaton_gff}
 
     gff = get_gff[spec.type](spec.data)
@@ -133,6 +134,10 @@ def gff_2_automaton_params(gff_xml:str):  # -> init, states, edges (dict (src,ds
 
 def ltl_2_automaton_gff(ltl:str) -> str:
     return execute_translation("QPTL", ltl, "-m ltl2ba -t nbw")
+
+def pltl_2_automaton_gff(ltl:str) -> str:
+    return execute_translation("QPTL", ltl, "-m pltl2ba -t nbw")
+
 
 def ore_2_automaton_gff(omega_regex:str) -> str:
     w_regex = to_regex(omega_regex)

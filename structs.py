@@ -56,7 +56,8 @@ class SmvModule:
 class SpecType(Enum):
     GFF_SPEC = 1
     LTL_SPEC = 2
-    OMEGA_REGEX_SPEC = 3
+    PLTL_SPEC = 3
+    OMEGA_REGEX_SPEC = 4
     # Aliases
     AUTOMATON_SPEC = GFF_SPEC # for legacy reasons
     ORE_SPEC = OMEGA_REGEX_SPEC # for simplicity

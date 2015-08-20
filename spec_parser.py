@@ -98,7 +98,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
                     is_false = l.startswith("!(") and l.endswith(")")
                     data = PropertySpec(l, not is_false, is_parsing_guarantees,
                                         l if not is_false else l[2:-1], spec_type)
-                elif spec_type == SpecType.LTL_SPEC:
+                elif spec_type in [SpecType.LTL_SPEC, SpecType.PLTL_SPEC]:
                     data = PropertySpec(l, True, is_parsing_guarantees, l, spec_type)
 
                 else:
@@ -112,8 +112,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
     module = SmvModule(module_name, module_inputs, '', '\n'.join(lines_without_spec), False, False)
     return module, assumptions, guarantees
 
-
-def parse_smv(smv_lines:list, base_dir) -> dict:   # {module_name: Specification}
+def parse_smv(smv_lines:list, base_dir) -> {str: (SmvModule, list, list)}:   # {module_name: Specification}
     lines_a_g_by_module_name = dict()
     module_start_indices = find_all(lambda l: l.startswith('MODULE'),
                                     smv_lines)

@@ -18,8 +18,9 @@ SYS_PLTL_SPEC
 G(g --> Y(~g S r | g) | r)
 
 SYS_ORE_SPEC
+-- #name grant_lowered_eventually
 --"grant is lowered eventually"
-{g* ng}
+{g* !g}
 
 SYS_AUTOMATON_SPEC
 --"grant is given for four ticks"

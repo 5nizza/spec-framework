@@ -60,7 +60,8 @@ class SpecType(Enum):
     OMEGA_REGEX_SPEC = 4
     # Aliases
     AUTOMATON_SPEC = GFF_SPEC # for legacy reasons
-    ORE_SPEC = OMEGA_REGEX_SPEC # for simplicity
+    LTLSPEC = LTL_SPEC # since smvtoaig does it like this
+    ORE_SPEC = OMEGA_REGEX_SPEC # for lazy people
 
 class PropertySpec:
     @staticmethod

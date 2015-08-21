@@ -28,20 +28,20 @@ def main(aiger_lines):
     assert J == 0
 
     F_index = I + L + O + B + C
-    F_lit = aiger_lines[F_index+1]   # +1 for the header
+    F_lit = aiger_lines[F_index + 1]   # +1 for the header
 
     J = 1
     F = 0
     J_lines = ['1', str(F_lit)]
 
-    aux_lines = ['aag %i %i %i %i %i %i %i %i %i' %(M,I,L,O,A,B,C,J,F)] + aiger_lines[1:F_index+1] + J_lines + aiger_lines[F_index+2:]
+    aux_lines = ['aag %i %i %i %i %i %i %i %i %i' % (M,I,L,O,A,B,C,J,F)] + aiger_lines[1:F_index + 1] + J_lines + aiger_lines[F_index + 2:]
 
     # now fix the symbol table
     for i,l in enumerate(aux_lines):
         if l.startswith('f0'):
             break
 
-    result_lines = aux_lines[:i] + ['j0 AIGER_JUSTICE_0'] + aux_lines[i+1:]
+    result_lines = aux_lines[:i] + ['j0 AIGER_JUSTICE_0'] + aux_lines[i + 1:]
 
     print('\n'.join(result_lines))
     return

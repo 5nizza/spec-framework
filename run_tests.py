@@ -86,7 +86,7 @@ def to_str_ret_out_err(rc, out, err):
     return res
 
 
-def synthesize_spec(aag_spec:str, test_name:str) -> bool:
+def synthesize_spec(aag_spec: str, test_name: str) -> bool:
     tmp_file_name = get_tmp_file_name() + '.aag'
     with open(tmp_file_name, 'w') as f:
         f.write(aag_spec)
@@ -105,7 +105,7 @@ def synthesize_spec(aag_spec:str, test_name:str) -> bool:
     return ret == EXIT_STATUS_REALIZABLE
 
 
-def get_all_smv_files(directory:str):
+def get_all_smv_files(directory: str):
     matching_files = list()
     for top, subdirs, files in os.walk(directory, followlinks=True):
         if 'notest' in files:  # ignore folders that contains file called notest

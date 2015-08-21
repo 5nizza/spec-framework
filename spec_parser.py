@@ -6,6 +6,7 @@ from itertools import chain
 # list of all possible system and environment specifications
 SPECS = list(chain(*[("ENV_{}".format(spec), "SYS_{}".format(spec)) for spec in SpecType.__members__]))
 
+
 def get_all_sections(lines, section_name):
     inside_section = False
     sections = list()
@@ -23,19 +24,23 @@ def get_all_sections(lines, section_name):
             inside_section = True
             cur_data = list()
 
+
 def is_section_declaration(l):
     return l.strip() and l.split()[0].strip() in SPECS + ['VAR', 'DEFINE', 'MODULE']
 
-def get_spec_type_for_section(section_declaration:str) -> SpecType:
+
+def get_spec_type_for_section(section_declaration: str) -> SpecType:
     assert section_declaration.endswith("_SPEC")
     assert section_declaration.startswith("SYS_") or section_declaration.startswith("ENV_")
-    spec_name = section_declaration[4:] # magic
+    spec_name = section_declaration[4:]  # magic
     return SpecType[spec_name]
 
-def is_guarantee(section_declaration:str) -> bool:
+
+def is_guarantee(section_declaration: str) -> bool:
     return section_declaration.startswith("SYS_")
 
-def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
+
+def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
     lines_without_spec = []
     assumptions = []
     guarantees = []
@@ -110,13 +115,14 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
     module = SmvModule(module_name, module_inputs, '', '\n'.join(lines_without_spec), False, False)
     return module, assumptions, guarantees
 
-def parse_smv(smv_lines:list, base_dir) -> {str: (SmvModule, list, list)}:   # {module_name: Specification}
+
+def parse_smv(smv_lines: list, base_dir) -> {str: (SmvModule, list, list)}:   # {module_name: Specification}
     lines_a_g_by_module_name = dict()
     module_start_indices = find_all(lambda l: l.startswith('MODULE'), smv_lines)
 
-    for i,start in enumerate(module_start_indices):
-        if i != len(module_start_indices) -1:
-            end = module_start_indices[i+1]
+    for i, start in enumerate(module_start_indices):
+        if i != len(module_start_indices) - 1:
+            end = module_start_indices[i + 1]
         else:
             end = len(smv_lines)
 

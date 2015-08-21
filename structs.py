@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Automaton:
     """
     An automaton has three types of states: `acc`, `dead`, normal.
@@ -15,7 +16,7 @@ class Automaton:
                  acc_states,
                  dead_states,
                  is_safety,  # `safety` means an automaton encodes rejecting finite traces
-                 edges:'tuple of ((src,dst),set of labels) where label is a tuple of literals'):
+                 edges: 'tuple of ((src,dst),set of labels) where label is a tuple of literals'):
         self.states = states
         self.init_state = init_state
         self.acc_states = acc_states
@@ -29,7 +30,7 @@ class Automaton:
 
     def _get_propositions(self):
         propositions = set()
-        for ((src,dst), labels) in self.edges:
+        for ((src, dst), labels) in self.edges:
             for label in labels:
                 for lit in label:
                     atom = lit.strip('~').strip('!')
@@ -51,7 +52,8 @@ class SmvModule:
         self.has_fair = has_fair
 
     def __str__(self):
-        return 'module: %s (%s), def:\n%s' %(self.name, self.desc, self.module_str)
+        return 'module: %s (%s), def:\n%s' % (self.name, self.desc, self.module_str)
+
 
 class SpecType(Enum):
     GFF_SPEC = 1
@@ -59,9 +61,10 @@ class SpecType(Enum):
     PLTL_SPEC = 3
     OMEGA_REGEX_SPEC = 4
     # Aliases
-    AUTOMATON_SPEC = GFF_SPEC # for legacy reasons
-    LTLSPEC = LTL_SPEC # since smvtoaig does it like this
-    ORE_SPEC = OMEGA_REGEX_SPEC # for lazy people
+    AUTOMATON_SPEC = GFF_SPEC    # for legacy reasons
+    LTLSPEC = LTL_SPEC           # since smvtoaig does it like this
+    ORE_SPEC = OMEGA_REGEX_SPEC  # for lazy people
+
 
 class PropertySpec:
     @staticmethod
@@ -70,8 +73,8 @@ class PropertySpec:
 
     def __init__(self,
                  desc,
-                 is_positive:bool or None,
-                 is_guarantee:bool or None,
+                 is_positive: bool or None,
+                 is_guarantee: bool or None,
                  data,
                  type: SpecType):
         self.desc = desc

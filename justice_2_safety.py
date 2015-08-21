@@ -64,7 +64,7 @@ SPEC
     counter_smv = template.format(k=str(k))
 
     ret, out, err = execute_shell('smvflatten | smvtoaig | aigmove | aigstrip | aigtoaig -a', input=counter_smv)
-    assert ret==0, to_str_ret_out_err(ret, out, err)
+    assert ret == 0, to_str_ret_out_err(ret, out, err)
 
     out_lines = out.splitlines()
     aag, m, i, l, o, a = out_lines[0].split()
@@ -183,7 +183,7 @@ def define_counter_new_lits(counter_aig):
 
 def define_shift():   # should go before any additions to the spec
     global shift
-    next_lit = spec.maxvar*2 + 2
+    next_lit = spec.maxvar * 2 + 2
     # In counter_aig:
     # 2 is taken by the only input `reset`,
     # and 4 is the first used literal,
@@ -211,12 +211,12 @@ def add_counter_to_spec(k):
             l_symbol.next = new_next
 
         elif len(tokens) == 3:  # AND gate
-            old_and, old_rhs0, old_rhs1 = int(tokens[0]), \
-                                          int(tokens[1]), \
-                                          int(tokens[2])
-            new_and, new_rhs0, new_rhs1 = get_new_s_lit(old_and), \
-                                          get_new_s_lit(old_rhs0), \
-                                          get_new_s_lit(old_rhs1)
+            old_and, old_rhs0, old_rhs1 = (int(tokens[0]),
+                                           int(tokens[1]),
+                                           int(tokens[2]))
+            new_and, new_rhs0, new_rhs1 = (get_new_s_lit(old_and),
+                                           get_new_s_lit(old_rhs0),
+                                           get_new_s_lit(old_rhs1))
             #: :type: aiglib.aiger_and
             and_symbol = get_add_symbol(new_and)
             get_add_symbol(new_rhs0)
@@ -260,7 +260,7 @@ def write_and_die():
 
 
 def main(spec_filename, k):
-    assert k>0, str(k)
+    assert k > 0, str(k)
 
     global spec
     #: :type: aiglib.aiger

@@ -81,58 +81,58 @@ def main(filename):
     assert model.num_justice == 1
     assert model.justice.size == 1
 
-    next_lit = (model.maxvar + 1)*2
+    next_lit = (model.maxvar + 1) * 2
 
     # first, add all elements
 
     aiglib.aiger_add_input(model, next_lit, 'SYNT_2_HWMCC_aux')
     #: :type: aiglib.aiger_symbol
-    aux = aiglib.get_aiger_symbol(model.inputs, model.num_inputs-1)
+    aux = aiglib.get_aiger_symbol(model.inputs, model.num_inputs - 1)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and1 = aiglib.get_aiger_and(model.ands, model.num_ands-1)
+    and1 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
     # TODO: use aiger_is_and, remove this func from the interface
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and2 = aiglib.get_aiger_and(model.ands, model.num_ands-1)
+    and2 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and3 = aiglib.get_aiger_and(model.ands, model.num_ands-1)
+    and3 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and4 = aiglib.get_aiger_and(model.ands, model.num_ands-1)
+    and4 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
     next_lit += 2
 
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L1')
     #: :type: aiglib.aiger_and
-    L1 = aiglib.get_aiger_symbol(model.latches, model.num_latches-1)
+    L1 = aiglib.get_aiger_symbol(model.latches, model.num_latches - 1)
     # TODO: use aiger_is_latch, remove this from the interface
     next_lit += 2
 
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L2')
     #: :type: aiglib.aiger_and
-    L2 = aiglib.get_aiger_symbol(model.latches, model.num_latches-1)
+    L2 = aiglib.get_aiger_symbol(model.latches, model.num_latches - 1)
     next_lit += 2
 
     #: :type: aiglib.aiger_symbol
     old_just_lit = aiglib.get_justice_lit(model, 0, 0)
 
     # second, define all connections
-    and1.rhs0, and1.rhs1 = aux.lit+1, L1.lit+1
+    and1.rhs0, and1.rhs1 = aux.lit + 1, L1.lit + 1
     and2.rhs0, and2.rhs1 = L1.lit, old_just_lit
-    and3.rhs0, and3.rhs1 = and2.lhs+1, L2.lit+1
-    and4.rhs0, and4.rhs1 = L2.lit+1, L1.lit
+    and3.rhs0, and3.rhs1 = and2.lhs + 1, L2.lit + 1
+    and4.rhs0, and4.rhs1 = L2.lit + 1, L1.lit
 
-    L1.next = and1.lhs+1
-    L2.next = and3.lhs+1
+    L1.next = and1.lhs + 1
+    L2.next = and3.lhs + 1
 
     aiglib.set_justice_lit(model, 0, 0, and4.lhs)
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
                         metavar='aiger',
                         nargs='?',
                         type=str,
-                        default='/dev/stdin',  #TODOfut: Works on Linux-like only
+                        default='/dev/stdin',  # TODOfut: Works on Linux-like only
                         help='model synthesized in AIGER format')
 
     args = parser.parse_args()

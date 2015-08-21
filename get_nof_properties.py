@@ -22,4 +22,3 @@ def get_nof_properties(hwmcc_model_file):
 
 if __name__ == "__main__":
     print get_nof_properties(sys.argv[1])
-

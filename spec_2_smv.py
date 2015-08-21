@@ -21,13 +21,13 @@ BAD_SIGNAL_NAME = "bad_signal"
 JUSTICE_SIGNAL_NAME = 'justice_signal'
 
 
-def label2smvexpr(clauses:set):
+def label2smvexpr(clauses: set):
     c_to_smv = lambda c: '(%s)' % ' & '.join(l.replace('~', '!') for l in c)
     smv_expr = '(%s)' % ' | '.join(map(c_to_smv, clauses))
     return smv_expr
 
 
-def det_automaton_to_smv_module(automaton:Automaton, module_name:str, desc:str) -> SmvModule:
+def det_automaton_to_smv_module(automaton: Automaton, module_name: str, desc: str) -> SmvModule:
     """
     :return: smv module named `module_name`.
     The module defines (output) signals: `bad`, `fair`, `fall_out`.
@@ -68,7 +68,7 @@ esac;
 
     transitions_list = []
     for ((u, v), clauses) in automaton.edges:
-        transitions_list += ['state={u} & {lbl_expr} : {v};'.format(u=u,v=v, lbl_expr=label2smvexpr(clauses))]
+        transitions_list += ['state={u} & {lbl_expr} : {v};'.format(u=u, v=v, lbl_expr=label2smvexpr(clauses))]
     transitions_list.append('TRUE: sink_state;')
     transitions = '\n'.join(transitions_list)
 
@@ -91,7 +91,7 @@ esac;
                                  bad_def=bad_def, fair_def=fair_def, fall_out=fall_out)
 
     return SmvModule(module_name, module_inputs, desc, module_str,
-                     len(automaton.dead_states)>0,
+                     len(automaton.dead_states) > 0,
                      not automaton.is_safety)
 
 # def workaround_accept_init(never_str):
@@ -143,12 +143,12 @@ esac;
 # #     def test_(self):
 # #         print(gff_2_never('<?xml version="1.0" encoding="UTF-8" standalone="no"?> <Structure label-on="Transition" type="FiniteStateAutomaton">     <Name/>     <Description/>     <Formula/>     <Alphabet type="Propositional">         <Proposition>init</Proposition>         <Proposition>read</Proposition>         <Proposition>readA</Proposition>         <Proposition>readB</Proposition>         <Proposition>valueT</Proposition>         <Proposition>write</Proposition>         <Proposition>writeA</Proposition>         <Proposition>writeB</Proposition>         <Proposition>writtenA</Proposition>         <Proposition>writtenB</Proposition>     </Alphabet>     <StateSet>         <State sid="11">             <Y>100</Y>             <X>380</X>             <Properties/>         </State>         <State sid="12">             <Y>100</Y>             <X>240</X>             <Properties/>         </State>         <State sid="15">             <Y>200</Y>             <X>140</X>             <Properties/>         </State>         <State sid="17">             <Y>300</Y>             <X>240</X>             <Properties/>         </State>         <State sid="19">             <Y>300</Y>             <X>380</X>             <Properties/>         </State>     </StateSet>     <InitialStateSet>         <StateID>15</StateID>     </InitialStateSet>     <TransitionSet complete="false">         <Transition tid="0">             <From>11</From>             <To>11</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="1">             <From>12</From>             <To>12</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="3">             <From>12</From>             <To>11</To>             <Label>readB</Label>             <Properties/>         </Transition>         <Transition tid="5">             <From>15</From>             <To>12</To>             <Label>writtenA</Label>             <Properties/>         </Transition>         <Transition tid="6">             <From>15</From>             <To>15</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="8">             <From>17</From>             <To>17</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="10">             <From>15</From>             <To>17</To>             <Label>writtenB</Label>             <Properties/>         </Transition>         <Transition tid="13">             <From>19</From>             <To>19</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="14">             <From>17</From>             <To>19</To>             <Label>readA</Label>             <Properties/>         </Transition>     </TransitionSet>     <Acc type="Buchi">         <StateID>11</StateID>         <StateID>19</StateID>     </Acc>     <Properties/> </Structure> '))
 
-def generate_name_for_property_module(spec:PropertySpec) -> str:
+def generate_name_for_property_module(spec: PropertySpec) -> str:
     res = 'module_%s' % re.sub('\W', '_', spec.desc)
     return res
 
 
-def build_spec_module(spec:PropertySpec) -> SmvModule:
+def build_spec_module(spec: PropertySpec) -> SmvModule:
     automaton = automaton_from_spec(spec)
 
     name = generate_name_for_property_module(spec)
@@ -157,7 +157,7 @@ def build_spec_module(spec:PropertySpec) -> SmvModule:
     return smv_module
 
 
-def build_counting_fairness_module(nof_fair_signals:int, name:str) -> SmvModule:
+def build_counting_fairness_module(nof_fair_signals: int, name: str) -> SmvModule:
     template = \
 """MODULE {name}({signals})
 VAR
@@ -178,14 +178,14 @@ esac;
     enum_states = ', '.join(str(i) for i in range(nof_states))
 
     transitions = ['state=0: 1;']
-    for s in range(1,nof_states):
-        transitions.append('state=%s & fair%s: %s;' % (s,s,(s+1)%nof_states))
+    for s in range(1, nof_states):
+        transitions.append('state=%s & fair%s: %s;' % (s, s, (s + 1) % nof_states))
     transitions.append('TRUE: state;')
     transitions = '\n'.join(transitions)
 
     fair_def = 'fair := (state=0);'  # TODO: extract constant 'fair'
 
-    signals = ('fair%s'%i for i in range(1, nof_fair_signals+1))
+    signals = ('fair%s' % i for i in range(1, nof_fair_signals + 1))
     signals_str = ', '.join(signals)
 
     result = template.format(init_state=init_state, name=name,
@@ -349,8 +349,8 @@ esac;
 
 def compose_smv(non_spec_modules,
                 asmpt_modules, grnt_modules,
-                clean_main_module:SmvModule,
-                counting_fairness_module:SmvModule) -> StrAwareList:
+                clean_main_module: SmvModule,
+                counting_fairness_module: SmvModule) -> StrAwareList:
     smv = StrAwareList()
 
     for m in non_spec_modules:
@@ -390,12 +390,12 @@ def compose_smv(non_spec_modules,
         assert m.has_bad or m.has_fair, str(m)
 
     if counting_fairness_module:
-        fair_signals = ['sys_prop_%s.fair'%m.name
+        fair_signals = ['sys_prop_%s.fair' % m.name
                         for m in filter(lambda m: m.has_fair, grnt_modules)]
         smv += '  sys_prop_%s : %s(%s);' % \
-                       (counting_fairness_module.name,
-                        counting_fairness_module.name,
-                        ','.join(fair_signals))
+               (counting_fairness_module.name,
+                counting_fairness_module.name,
+                ','.join(fair_signals))
     smv.sep()
 
     if find(lambda m: m.has_bad, grnt_modules) != -1:
@@ -409,7 +409,6 @@ def compose_smv(non_spec_modules,
         smv += '  sys_prop_%s.fair' % counting_fairness_module.name
 
     return smv
-
 
 
 # def my_main(smv_lines, base_dir):
@@ -477,7 +476,7 @@ def main(smv_lines, base_dir):
     nof_sys_live_modules = len(list(filter(lambda m: m.has_fair, grnt_modules)))
     if nof_sys_live_modules:
         counting_justice_module = build_counting_fairness_module(nof_sys_live_modules,
-                                                                 'counting_justice_'+name)
+                                                                 'counting_justice_' + name)
 
     # for m in asmpt_modules + grnt_modules:
     #     assert set(m.module_inputs).issubset(signals_and_macros)

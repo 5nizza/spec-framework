@@ -8,7 +8,7 @@ def stripped(str_lines) -> list:
 
 
 def find(lambda_func, l) -> int:
-    for i,e in enumerate(l):
+    for i, e in enumerate(l):
         if lambda_func(e):
             return i
     return -1

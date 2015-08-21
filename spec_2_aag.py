@@ -44,7 +44,7 @@ def rename(l, outputs) -> str:
     # 'i1 cancel' becomes 'i1 controllable_cancel' if cancel is an output
     signal = l.split()[1]
     if signal in outputs:
-        return l.replace(signal, 'controllable_'+signal)
+        return l.replace(signal, 'controllable_' + signal)
     else:
         return l
 
@@ -58,7 +58,7 @@ def main(smv_spec_file_name):
 
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),
     # so use piping here instead
-    aig = str(subprocess.check_output('{spec_2_smv} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {fairness_2_justice}' \
+    aig = str(subprocess.check_output('{spec_2_smv} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {fairness_2_justice}'
                                       .format(spec_2_smv=spec_2_smv_path,
                                               spec_file=smv_spec_file_name,
                                               fairness_2_justice=fairness_2_justice_path),
@@ -99,4 +99,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     exit(main(args.file.name))
-

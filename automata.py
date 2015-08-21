@@ -11,7 +11,8 @@ from structs import Automaton, SpecType, PropertySpec
 import logging
 logger = logging.getLogger(__name__)
 
-def automaton_from_gff(gff:str, complement: bool = False) -> Automaton:
+
+def automaton_from_gff(gff: str, complement: bool=False) -> Automaton:
     gff = strip_unused_symbols(gff)
 
     input_file_name = get_tmp_file_name()
@@ -63,8 +64,7 @@ save $res {output_file_name2};
     return automaton
 
 
-
-def automaton_from_spec(spec:PropertySpec) -> Automaton:
+def automaton_from_spec(spec: PropertySpec) -> Automaton:
     """
     We return an automaton that is 'positive deterministic Buchi'
     (we complement negated ones)
@@ -91,23 +91,26 @@ def automaton_from_spec(spec:PropertySpec) -> Automaton:
 
     return automaton_from_gff(gff, not spec.is_positive)
 
+
 def get_nacc_trap_states(states, acc_states, edges):
     nacc_states = set(states).difference(acc_states)
     nacc_trap_states = set()
 
     for s in nacc_states:
-        s_edges = edges.get((s,s))
+        s_edges = edges.get((s, s))
         if s_edges:
             if reduces_to_true(s_edges):
                 nacc_trap_states.add(s)  # TODOopt: also replace edges with one trivial
 
     return nacc_trap_states
 
-def is_liveness(raw_gff:str):
+
+def is_liveness(raw_gff: str):
     automaton = gff_2_automaton_params(raw_gff)
     return not automaton.is_safety()
 
-def gff_2_automaton_params(gff_xml:str):  # -> init, states, edges (dict (src,dst) |-> labels), acc
+
+def gff_2_automaton_params(gff_xml: str):  # -> init, states, edges (dict (src,dst) |-> labels), acc
     # TODOopt: (boolean) simplify transitions labels
     # """
     # >>> print(gff_2_automaton(readfile('/tmp/tmp.gff')))
@@ -124,21 +127,24 @@ def gff_2_automaton_params(gff_xml:str):  # -> init, states, edges (dict (src,ds
         states.add(src)
         states.add(dst)
 
-        if (src,dst) not in edges:
-            edges[(src,dst)] = set()
+        if (src, dst) not in edges:
+            edges[(src, dst)] = set()
 
-        edges[(src,dst)].add(tuple(lbl.split()))
+        edges[(src, dst)].add(tuple(lbl.split()))
 
     init_state = root.find('InitialStateSet').find('StateID').text
     acc_states = set(elem.text for elem in root.find('Acc').iter('StateID'))
 
     return init_state, states, edges, acc_states
 
-def ltl_2_automaton_gff(ltl:str) -> str:
+
+def ltl_2_automaton_gff(ltl: str) -> str:
     return execute_translation("QPTL", ltl, "-m ltl2ba -t nbw")
 
-def pltl_2_automaton_gff(ltl:str) -> str:
+
+def pltl_2_automaton_gff(ltl: str) -> str:
     return execute_translation("QPTL", ltl, "-m pltl2ba -t nbw")
+
 
 def check_correct_ore(omega_regex: str):
     match = search("not_", omega_regex)
@@ -146,7 +152,8 @@ def check_correct_ore(omega_regex: str):
     match = search("_and_", omega_regex)
     assert not match, "\"%s\" contains illegal sequence '_and_'" % omega_regex
 
-def ore_2_automaton_gff(omega_regex:str) -> str:
+
+def ore_2_automaton_gff(omega_regex: str) -> str:
     check_correct_ore(omega_regex)
     w_regex = to_regex(omega_regex)
     w_regex = sub("([Tt]rue|\.)", "True2", w_regex)

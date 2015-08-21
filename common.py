@@ -11,7 +11,8 @@ from ansistrm import ColorizingStreamHandler
 # to be removed
 from structs import Automaton
 
-def setup_logging(logger_name, verbose_level:int=0, filename:str=None):
+
+def setup_logging(logger_name, verbose_level: int=0, filename: str=None):
     level = None
     if verbose_level == -1:
         level = logging.CRITICAL
@@ -37,7 +38,7 @@ def setup_logging(logger_name, verbose_level:int=0, filename:str=None):
 
     root.setLevel(level)
 
-    return logging.getLogger(__name__)
+    return logging.getLogger(logger_name)
 
 
 def reduces_to_true(clauses):

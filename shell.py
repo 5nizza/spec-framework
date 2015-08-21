@@ -29,4 +29,3 @@ def execute_shell(cmd, input=''):
         out, err = p.communicate()
 
     return p.returncode, out, err
-

@@ -22,9 +22,7 @@ JUSTICE_SIGNAL_NAME = 'justice_signal'
 
 
 def label2smvexpr(clauses:set):
-    def c_to_smv(c):
-        return '(%s)' % ' & '.join(l.replace('~', '!') for l in c)
-
+    c_to_smv = lambda c: '(%s)' % ' & '.join(l.replace('~', '!') for l in c)
     smv_expr = '(%s)' % ' | '.join(map(c_to_smv, clauses))
     return smv_expr
 

@@ -10,6 +10,7 @@ def get_all_sections(lines, section_name):
     inside_section = False
     sections = list()
     cur_data = None
+
     for l in lines:
         if not l.strip():
             continue
@@ -38,11 +39,12 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
     lines_without_spec = []
     assumptions = []
     guarantees = []
-    desc = None
 
     module_name = module_inputs = None
     now_parsing = False
     is_parsing_guarantees = None
+    desc = None
+
     for l_raw in module_lines:
         l = l_raw.strip()
         if not l:
@@ -110,13 +112,13 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule,list,list):
 
 def parse_smv(smv_lines:list, base_dir) -> {str: (SmvModule, list, list)}:   # {module_name: Specification}
     lines_a_g_by_module_name = dict()
-    module_start_indices = find_all(lambda l: l.startswith('MODULE'),
-                                    smv_lines)
+    module_start_indices = find_all(lambda l: l.startswith('MODULE'), smv_lines)
+
     for i,start in enumerate(module_start_indices):
-        end = module_start_indices[i+1] \
-            if i != len(module_start_indices) - 1 \
-            else \
-            len(smv_lines)
+        if i != len(module_start_indices) -1:
+            end = module_start_indices[i+1]
+        else:
+            end = len(smv_lines)
 
         module_without_spec, assumptions, guarantees = \
             parse_smv_module(smv_lines[start:end], base_dir)

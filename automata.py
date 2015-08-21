@@ -20,8 +20,8 @@ def automaton_from_gff(gff:str, complement: bool = False) -> Automaton:
 
     with open(input_file_name, 'w') as f:
         f.write(gff)
-    complement_stmnt = '' if not complement else '$res = complement $res;'
 
+    complement_stmnt = '' if not complement else '$res = complement $res;'
     goal_script = """
 $res = load "{input_file_name}";
 {complement_stmnt}
@@ -93,8 +93,8 @@ def automaton_from_spec(spec:PropertySpec) -> Automaton:
 
 def get_nacc_trap_states(states, acc_states, edges):
     nacc_states = set(states).difference(acc_states)
-
     nacc_trap_states = set()
+
     for s in nacc_states:
         s_edges = edges.get((s,s))
         if s_edges:
@@ -115,6 +115,7 @@ def gff_2_automaton_params(gff_xml:str):  # -> init, states, edges (dict (src,ds
     states = set()
     edges = dict()  # (src,dst) -> set of labels
     root = ElementTree.fromstring(gff_xml)
+
     for transition_element in root.iter('Transition'):
         src = transition_element.find('From').text
         dst = transition_element.find('To').text
@@ -129,7 +130,6 @@ def gff_2_automaton_params(gff_xml:str):  # -> init, states, edges (dict (src,ds
         edges[(src,dst)].add(tuple(lbl.split()))
 
     init_state = root.find('InitialStateSet').find('StateID').text
-
     acc_states = set(elem.text for elem in root.find('Acc').iter('StateID'))
 
     return init_state, states, edges, acc_states
@@ -150,6 +150,7 @@ def ore_2_automaton_gff(omega_regex:str) -> str:
     check_correct_ore(omega_regex)
     w_regex = to_regex(omega_regex)
     w_regex = sub("([Tt]rue|\.)", "True2", w_regex)
+
     result = execute_translation("ORE", w_regex, "-se -sa")
     result = sub("<Alphabet type=\"Classical\">",
                  "<Alphabet type=\"Propositional\">",

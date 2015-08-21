@@ -7,10 +7,12 @@ def to_regex(siregex: str) -> str:
     """
     regex = sub("[!~]", "not_", siregex)
     regex = sub(",", "_and_", regex)
-
     return regex
 
 def from_regex(regex: str) -> str:
+    """
+    Transforms a modified GOAL regex back into signal regex.
+    """
     siregex = sub("not_", "~", regex)
     siregex = sub("_and_", ",", siregex)
     return siregex

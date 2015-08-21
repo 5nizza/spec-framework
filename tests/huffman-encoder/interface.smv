@@ -331,3 +331,5 @@ done_is_inf_often_high.gff;
 --   output_type=spec
 --   data=no_fifos_overflow.gff
 --   polarity=bad trace
+
+--realizable

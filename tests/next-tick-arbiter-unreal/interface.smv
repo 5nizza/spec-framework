@@ -17,3 +17,5 @@ SYS_AUTOMATON_SPEC
 -- "~G(g1 & g2)"
 !mut_exclusion.gff;
 
+-- unrealizable
+

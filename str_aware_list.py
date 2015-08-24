@@ -8,7 +8,7 @@ class StrAwareList(Iterable):
         self._output = output
 
     def sep(self):
-        self += '\n'
+        self += '' if self._output.__class__ == list else '\n'
         return self
 
     def __str__(self):

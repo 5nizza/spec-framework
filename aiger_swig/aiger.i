@@ -5,10 +5,28 @@
 #include "aiger.h"
 %}
 
-
+%include "typemaps.i"
 %include <cstring.i>
 %cstring_output_maxsize(char *str, size_t len);
 
+%typemap(in) unsigned int *
+{
+  int len = PySequence_Length($input);
+  unsigned int _tmp[len];
+  int i;
+  for(i = 0; i < len; i++)
+  {
+    PyObject *o = PySequence_GetItem($input,i);
+    if (PyInt_Check(o))
+      _tmp[i] = (unsigned) PyInt_AsLong(o);
+    else
+    {
+      PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
+      return NULL;
+    }
+  }
+  $1 = _tmp;
+}
 
 %feature("autodoc", "1");
 

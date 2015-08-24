@@ -52,16 +52,14 @@ def det_automaton_to_smv_module(automaton: Automaton, module_name: str, desc: st
 VAR
   state : {{{enum_states}}};
 DEFINE
-  {bad_def}
-  {fair_def}
-  {fall_out}
+  {bad_def}{fair_def}{fall_out}
 INIT
   state = {init_state}
 ASSIGN
-next(state) :=
-case
-{transitions}
-esac;
+  next(state) :=
+  case
+    {transitions}
+  esac;
 """
     enum_states = ', '.join(automaton.states)
     enum_states += ', sink_state'
@@ -70,14 +68,14 @@ esac;
     for ((u, v), clauses) in automaton.edges:
         transitions_list += ['state={u} & {lbl_expr} : {v};'.format(u=u, v=v, lbl_expr=label2smvexpr(clauses))]
     transitions_list.append('TRUE: sink_state;')
-    transitions = '\n'.join(transitions_list)
+    transitions = '\n    '.join(transitions_list)
 
     bad_def = fair_def = ''
     if automaton.dead_states:
-        bad_def = 'bad := %s;' % ' | '.join('(state=%s)' % s
+        bad_def = 'bad := %s;\n  ' % ' | '.join('(state=%s)' % s
                                             for s in automaton.dead_states)
     if not automaton.is_safety:
-        fair_def = 'fair := %s;' % ' | '.join('(state=%s)' % s
+        fair_def = 'fair := %s;\n  ' % ' | '.join('(state=%s)' % s
                                               for s in automaton.acc_states)
 
     fall_out = 'fall_out := (state=sink_state);'
@@ -167,10 +165,10 @@ DEFINE
 INIT
   state = {init_state}
 ASSIGN
-next(state) :=
-case
-{transitions}
-esac;
+  next(state) :=
+  case
+    {transitions}
+  esac;
 """
     init_state = 0
 
@@ -181,7 +179,7 @@ esac;
     for s in range(1, nof_states):
         transitions.append('state=%s & fair%s: %s;' % (s, s, (s + 1) % nof_states))
     transitions.append('TRUE: state;')
-    transitions = '\n'.join(transitions)
+    transitions = '\n    '.join(transitions)
 
     fair_def = 'fair := (state=0);'  # TODO: extract constant 'fair'
 
@@ -355,22 +353,18 @@ def compose_smv(non_spec_modules,
 
     for m in non_spec_modules:
         smv += m.module_str
-        smv.sep()
 
     for am in asmpt_modules:
         smv += am.module_str
-        smv.sep()
 
     for gm in grnt_modules:
         smv += gm.module_str
-        smv.sep()
 
     if counting_fairness_module:
         smv += counting_fairness_module.module_str
 
     # the main module
     smv += clean_main_module.module_str
-    smv.sep()
 
     if asmpt_modules:
         smv += "VAR --assumptions modules"
@@ -382,7 +376,6 @@ def compose_smv(non_spec_modules,
         smv += 'INVAR'
         smv += '  !(%s)' % ' | '.join('env_prop_%s.bad' % m.name
                                       for m in asmpt_modules)
-        smv.sep()
 
     smv += "VAR --guarantees modules"
     for m in grnt_modules:
@@ -396,15 +389,15 @@ def compose_smv(non_spec_modules,
                (counting_fairness_module.name,
                 counting_fairness_module.name,
                 ','.join(fair_signals))
-    smv.sep()
 
     if find(lambda m: m.has_bad, grnt_modules) != -1:
+        smv.sep()
         smv += "SPEC"
         smv += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
                                          for m in filter(lambda m: m.has_bad, grnt_modules))
-        smv.sep()
 
     if counting_fairness_module:
+        smv.sep()
         smv += "FAIRNESS"
         smv += '  sys_prop_%s.fair' % counting_fairness_module.name
 

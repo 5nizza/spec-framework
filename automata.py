@@ -37,7 +37,7 @@ save $res {output_file_name2};
            output_file_name=output_file_name,
            output_file_name2=output_file_name2)
     # when complement is false, then empty line -> remove it
-    goal_script = '\n'.join(goal_script.split('\n'))
+    goal_script = '\n'.join(s for s in goal_script.split('\n') if s)
 
     execute_goal_script(goal_script)
 
@@ -80,7 +80,7 @@ def automaton_from_spec(spec: PropertySpec) -> Automaton:
     """
 
     logger.info('building automaton from spec "%s" of type %s', spec.desc, spec.type)
-    logger.debug('Full spec:\n%s', spec)
+    logger.debug(spec)
     # TODO better spec parsing
     get_gff = {SpecType.GFF_SPEC: readfile,
                SpecType.LTL_SPEC: ltl_2_automaton_gff,

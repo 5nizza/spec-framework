@@ -23,7 +23,6 @@ def main(filename):
     aiglib.aiger_open_and_read_from_file(model, filename)
 
     latches = model.latches
-    latch = latches
 
     for i in range(model.num_latches):
         latch = aiglib.get_aiger_symbol(latches, i)

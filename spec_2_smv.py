@@ -73,10 +73,10 @@ ASSIGN
     bad_def = fair_def = ''
     if automaton.dead_states:
         bad_def = 'bad := %s;\n  ' % ' | '.join('(state=%s)' % s
-                                            for s in automaton.dead_states)
+                                                for s in automaton.dead_states)
     if not automaton.is_safety:
         fair_def = 'fair := %s;\n  ' % ' | '.join('(state=%s)' % s
-                                              for s in automaton.acc_states)
+                                                  for s in automaton.acc_states)
 
     fall_out = 'fall_out := (state=sink_state);'
 

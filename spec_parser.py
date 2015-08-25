@@ -1,7 +1,9 @@
 import re
-from python_ext import find_all, readfile
-from structs import SmvModule, PropertySpec, SpecType
 from itertools import chain
+
+from python_ext import find_all
+from structs import SmvModule, PropertySpec, SpecType
+
 
 # list of all possible system and environment specifications
 SPECS = list(chain(*[("ENV_{}".format(spec), "SYS_{}".format(spec)) for spec in SpecType.__members__]))
@@ -62,7 +64,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
                 lines_without_spec.append(l_raw)
             else:
                 match = re.fullmatch("(--| )*#(name|desc) ([\w_]+).*", l)
-                if(match):
+                if match:
                     desc = match.groups()[2]
             continue
 

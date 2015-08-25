@@ -28,6 +28,10 @@
     // printf("%d\n", _tmp[i]);
   }
 }
+%typemap(freearg) unsigned int *
+{
+  free($1);
+}
 
 %feature("autodoc", "1");
 
@@ -123,14 +127,12 @@ typedef int (*aiger_put) (char ch, void *client_state);
 
 /*------------------------------------------------------------------------*/
 
-enum aiger_mode
+typedef enum aiger_mode
 {
   aiger_binary_mode = 0,
   aiger_ascii_mode = 1,
   aiger_stripped_mode = 2,	/* can be ORed with one of the previous */
-};
-
-typedef enum aiger_mode aiger_mode;
+} aiger_mode;
 
 /*------------------------------------------------------------------------*/
 

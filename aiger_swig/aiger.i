@@ -12,20 +12,21 @@
 %typemap(in) unsigned int *
 {
   int len = PySequence_Length($input);
-  unsigned int _tmp[len];
+  $1 = malloc(len * sizeof(unsigned));
   int i;
   for(i = 0; i < len; i++)
   {
     PyObject *o = PySequence_GetItem($input,i);
     if (PyInt_Check(o))
-      _tmp[i] = (unsigned) PyInt_AsLong(o);
+      $1[i] = (unsigned) PyInt_AsLong(o);
     else
     {
+      free($1);
       PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
       return NULL;
     }
+    // printf("%d\n", _tmp[i]);
   }
-  $1 = _tmp;
 }
 
 %feature("autodoc", "1");

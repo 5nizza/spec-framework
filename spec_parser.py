@@ -63,7 +63,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
             if not now_parsing:
                 lines_without_spec.append(l_raw)
             else:
-                match = re.fullmatch("(--| )*#(name|desc) ([\w_]+).*", l)
+                match = re.fullmatch("(--| )*#(name|desc):? +([\w_]+).*", l)
                 if match:
                     desc = match.groups()[2]
             continue

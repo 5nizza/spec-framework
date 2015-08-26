@@ -390,16 +390,40 @@ def compose_smv(non_spec_modules,
                 counting_fairness_module.name,
                 ','.join(fair_signals))
 
-    if find(lambda m: m.has_bad, grnt_modules) != -1:
-        smv.sep()
-        smv += "SPEC"
-        smv += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-                                         for m in filter(lambda m: m.has_bad, grnt_modules))
+    has_bad = find(lambda m: m.has_bad, grnt_modules) != -1
+    smv.sep()
+    smv += "VAR"
+    if has_bad:
+        smv += "  bad_variable: boolean;"
+    # smv += "  constr_variable: boolean;"
+    if counting_fairness_module:
+        smv += "  just_variable: boolean;"
+    # smv += "  fair_variable: boolean;"
+    smv.sep()
+
+    smv += "ASSIGN"
+    if has_bad: # if find(lambda m: m.has_bad, grnt_modules) != -1:
+        # old version -- delete later
+        # smv += "SPEC"
+        # smv += '  AG !(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
+        #                                  for m in filter(lambda m: m.has_bad, grnt_modules))
+        # new version
+        # smv += "ASSIGN"
+        smv += "  next(bad_variable) := %s;"  % ' | '.join('sys_prop_%s.bad' % m.name
+                                                           for m in filter(lambda m: m.has_bad, grnt_modules))
+        smv += "  init(bad_variable) := FALSE;"
+    # smv += "  next(constr_variable) := TRUE;"
 
     if counting_fairness_module:
-        smv.sep()
-        smv += "FAIRNESS"
-        smv += '  sys_prop_%s.fair' % counting_fairness_module.name
+        # old version -- delete later
+        # smv += "FAIRNESS"
+        # smv += '  sys_prop_%s.fair' % counting_fairness_module.name
+        #new_version
+        # smv += "ASSIGN"
+        smv += "  next(just_variable) := sys_prop_%s.fair;"  % counting_fairness_module.name
+        smv += "  init(just_variable) := FALSE;"
+
+    # smv += "  next(fair_variable) := TRUE;"
 
     return smv
 

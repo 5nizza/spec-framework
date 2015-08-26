@@ -53,15 +53,15 @@ def main(smv_spec_file_name):
     logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
-    fairness_2_justice_path = scripts_dir + '/fairness_2_justice.py'
+    latches_2_output_path = scripts_dir + '/latches_2_output.py'
     logger.debug('calling to %s' % spec_2_smv_path)
 
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),
     # so use piping here instead
-    aig = str(subprocess.check_output('{spec_2_smv} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {fairness_2_justice}'
+    aig = str(subprocess.check_output('{spec_2_smv} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {latches_2_output}'
                                       .format(spec_2_smv=spec_2_smv_path,
                                               spec_file=smv_spec_file_name,
-                                              fairness_2_justice=fairness_2_justice_path),
+                                              latches_2_output=latches_2_output_path),
                                       shell=True),
               encoding=sys.getdefaultencoding())
 

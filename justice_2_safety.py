@@ -4,7 +4,28 @@ import argparse
 import subprocess
 import sys
 import aiger_swig.aiger_wrap as aiglib
-from shell import execute_shell
+
+
+def execute_shell(cmd, input=''):
+    """
+    Execute cmd, send input to stdin.
+    Return returncode, stdout, stderr.
+    """
+
+    proc_stdin = subprocess.PIPE if input != '' and input is not None else None
+    proc_input = input if input != '' and input is not None else None
+
+    # args = shlex.split(cmd)
+
+    p = subprocess.Popen(cmd,
+                         stdin=proc_stdin,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         shell=True)
+
+    out, err = p.communicate(proc_input)
+
+    return p.returncode, out, err
 
 
 def to_str_ret_out_err(ret, out, err):

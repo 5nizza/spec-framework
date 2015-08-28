@@ -374,7 +374,7 @@ def compose_smv(non_spec_modules,
         smv += "VAR --assumptions modules"
         for m in asmpt_modules:
             smv += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-            assert (not m.has_fair) and m.has_bad, str(m) + '\n Assumptions must be safety'
+            # assert (not m.has_fair) and m.has_bad, str(m) + '\n Assumptions must be safety'
 
         if counting_fairness_module:
             fair_signals = ['sys_prop_%s.fair' % m.name
@@ -403,30 +403,30 @@ def compose_smv(non_spec_modules,
     if any([has_bad, counting_justice_module, counting_fairness_module]):
         smv += "VAR"
         if has_bad:
-            smv += "  bad_variable: boolean;"
+            smv += "  sys_prop_bad_variable: boolean;"
         # smv += "  constr_variable: boolean;"
         if counting_justice_module:
-            smv += "  just_variable: boolean;"
+            smv += "  sys_prop_just_variable: boolean;"
 
         if counting_fairness_module:
-            smv += "  fair_variable: boolean;"
+            smv += "  env_prop_fair_variable: boolean;"
         smv.sep()
 
     smv += "ASSIGN"
     if has_bad:
-        smv += "  next(bad_variable) := %s;"  % ' | '.join(['sys_prop_%s.bad' % m.name
+        smv += "  next(sys_prop_bad_variable) := %s;"  % ' | '.join(['sys_prop_%s.bad' % m.name
                                                            for m in filter(lambda m: m.has_bad, grnt_modules)] +
                                                            ['env_prop_%s.bad' % m.name
                                                            for m in filter(lambda m: m.has_bad, asmpt_modules)])
-        smv += "  init(bad_variable) := FALSE;"
+        smv += "  init(sys_prop_bad_variable) := FALSE;"
 
     if counting_fairness_module:
-        smv += "  next(fair_variable) := env_prop_%s.fair;"  % counting_fairness_module.name
-        smv += "  init(fair_variable) := TRUE;"
+        smv += "  next(env_prop_fair_variable) := env_prop_%s.fair;"  % counting_fairness_module.name
+        smv += "  init(env_prop_fair_variable) := TRUE;"
 
     if counting_justice_module:
-        smv += "  next(just_variable) := sys_prop_%s.fair;"  % counting_justice_module.name
-        smv += "  init(just_variable) := FALSE;"
+        smv += "  next(sys_prop_just_variable) := sys_prop_%s.fair;"  % counting_justice_module.name
+        smv += "  init(sys_prop_just_variable) := FALSE;"
 
     return smv
 

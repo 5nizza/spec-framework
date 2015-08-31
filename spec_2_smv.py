@@ -415,9 +415,9 @@ def compose_smv(non_spec_modules,
     smv += "ASSIGN"
     if has_bad:
         smv += "  next(sys_prop_bad_variable) := %s;"  % ' | '.join(['sys_prop_%s.bad' % m.name
-                                                           for m in filter(lambda m: m.has_bad, grnt_modules)] +
-                                                           ['env_prop_%s.bad' % m.name
-                                                           for m in filter(lambda m: m.has_bad, asmpt_modules)])
+                                                                     for m in filter(lambda m: m.has_bad, grnt_modules)] +
+                                                                    ['env_prop_%s.bad' % m.name
+                                                                     for m in filter(lambda m: m.has_bad, asmpt_modules)])
         smv += "  init(sys_prop_bad_variable) := FALSE;"
 
     if counting_fairness_module:

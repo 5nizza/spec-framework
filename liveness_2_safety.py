@@ -228,7 +228,7 @@ def add_counter_to_spec(k):
     define_shift()
     define_counter_new_lits(counter_aig)
 
-    for l in counter_aig.splitlines()[2:]:  # ignore header and input
+    for l in counter_aig.splitlines()[3:]:  # ignore header and input
         tokens = l.split()
 
         if len(tokens) == 1:  # output, ignore

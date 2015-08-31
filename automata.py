@@ -37,7 +37,7 @@ save $res {output_file_name2};
            output_file_name=output_file_name,
            output_file_name2=output_file_name2)
     # when complement is false, then empty line -> remove it
-    goal_script = '\n'.join(goal_script.split('\n'))
+    goal_script = '\n'.join(s for s in goal_script.split('\n') if s)
 
     execute_goal_script(goal_script)
 

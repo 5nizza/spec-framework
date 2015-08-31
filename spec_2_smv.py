@@ -377,8 +377,8 @@ def compose_smv(non_spec_modules,
             # assert (not m.has_fair) and m.has_bad, str(m) + '\n Assumptions must be safety'
 
         if counting_fairness_module:
-            fair_signals = ['sys_prop_%s.fair' % m.name
-                            for m in filter(lambda m: m.has_fair, grnt_modules)]
+            fair_signals = ['env_prop_%s.fair' % m.name
+                            for m in filter(lambda m: m.has_fair, asmpt_modules)]
             smv += '  env_prop_%s : %s(%s);' % \
                    (counting_fairness_module.name,
                     counting_fairness_module.name,

@@ -135,15 +135,11 @@ def get_add_symbol(s_new_lit):
 
     u_new_lit = strip_lit(s_new_lit)
 
-    if u_new_lit == 0:
-        input_, latch_, and_ = get_lit_type(u_new_lit)
-        return input_ or latch_ or and_
-
     if u_new_lit in symbol_by_ulit:
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
 
-    if u_new_lit in [strip_lit(get_new_s_lit(2)), strip_lit(get_new_s_lit(4))]:
+    if u_new_lit in [reset, inc]:
         # previously input literal, it was not AND nor latch in the counter
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
@@ -180,7 +176,7 @@ def get_new_s_lit(old_lit):
             return 1
 
         # here we have GF fair -> GF just
-        res = spec.fairness.lit
+        res = aiglib.get_aiger_symbol(spec.fairness,0)
         if is_negated(old_lit):
             res = negate(res)
         return res
@@ -319,7 +315,7 @@ def main(spec_filename, k):
     spec = aiglib.aiger_init()
     aiglib.aiger_open_and_read_from_file(spec, spec_filename)
 
-    assert spec.num_fairness <= 1, 'fairness is not supported, only single justice property'
+    assert spec.num_fairness <= 1, 'more than one fairness property is not supported yet'
 
     if spec.num_justice == 0:
         write_and_die()

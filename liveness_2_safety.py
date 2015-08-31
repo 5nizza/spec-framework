@@ -338,8 +338,8 @@ if __name__ == "__main__":
                                                  'By default, the format is with the single bad output. '
                                                  'NOTE: justice signal is replaced with True.')
 
-    parser.add_argument('aiger', metavar='aiger',
-                        type=str,
+    parser.add_argument('aiger', metavar='aiger', nargs='?',
+                        type=str, default='/dev/stdin',
                         help='input AIGER file to be transformed')
 
     parser.add_argument('out', metavar='out',

@@ -149,7 +149,7 @@ def get_add_symbol(s_new_lit):
         return input_ or latch_ or and_
 
     assert u_new_lit in counter_and_u_new_lits or \
-           u_new_lit in counter_latch_u_new_lits, "%s\n%s\n%s" % (u_new_lit, counter_and_u_new_lits, counter_latch_u_new_lits)
+        u_new_lit in counter_latch_u_new_lits, "%s\n%s\n%s" % (u_new_lit, counter_and_u_new_lits, counter_latch_u_new_lits)
 
     if u_new_lit in counter_and_u_new_lits:
         aiglib.aiger_add_and(spec, u_new_lit, 1, 1)
@@ -182,7 +182,7 @@ def get_new_s_lit(old_lit):
             return 1
 
         # here we have GF fair -> GF just
-        res = aiglib.get_aiger_symbol(spec.fairness,0)
+        res = aiglib.get_aiger_symbol(spec.fairness, 0)
         if is_negated(old_lit):
             res = negate(res)
         return res

@@ -14,8 +14,8 @@ skippable = "[A-Za-z0-9_]*"
 end = "\Z"
 string_to_match = "(just(ice)?|bad|constr(aint)?|fair)_(var(iable)?|sig(nal)?)"
 regex = "({skip}_)?{stm}(_{skip})?{end}".format(skip=skippable,
-                                        stm=string_to_match,
-                                        end=end)
+                                                stm=string_to_match,
+                                                end=end)
 
 
 def main(filename):
@@ -37,7 +37,6 @@ def main(filename):
                 aiglib.aiger_add_justice(model, 1, [latch.next], latch.name)
             if ltype == "f":
                 aiglib.aiger_add_fairness(model, latch.next, latch.name)
-
 
     res, string = aiglib.aiger_write_to_string(model,
                                                aiglib.aiger_ascii_mode,

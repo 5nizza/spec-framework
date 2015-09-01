@@ -18,7 +18,7 @@ def main(aiger_lines):
 
     assert header_tokens[0] == 'aag', 'only ascii is supported'
 
-    M,I,L,O,A,B,C,J,F = [int(s) for s in header_tokens[1:]]   # starting from 1 because `aig M I L O ..`
+    M, I, L, O, A, B, C, J, F = [int(s) for s in header_tokens[1:]]   # starting from 1 because `aig M I L O ..`
 
     if F == 0:
         print('\n'.join(aiger_lines))
@@ -34,10 +34,10 @@ def main(aiger_lines):
     F = 0
     J_lines = ['1', str(F_lit)]
 
-    aux_lines = ['aag %i %i %i %i %i %i %i %i %i' % (M,I,L,O,A,B,C,J,F)] + aiger_lines[1:F_index + 1] + J_lines + aiger_lines[F_index + 2:]
+    aux_lines = ['aag %i %i %i %i %i %i %i %i %i' % (M, I, L, O, A, B, C, J, F)] + aiger_lines[1:F_index + 1] + J_lines + aiger_lines[F_index + 2:]
 
     # now fix the symbol table
-    for i,l in enumerate(aux_lines):
+    for i, l in enumerate(aux_lines):
         if l.startswith('f0'):
             break
 

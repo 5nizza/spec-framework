@@ -126,7 +126,7 @@ def get_add_symbol(s_new_lit):
         return input_ or latch_ or and_
 
     assert u_new_lit in counter_and_u_new_lits or \
-           u_new_lit in counter_latch_u_new_lits
+        u_new_lit in counter_latch_u_new_lits
 
     if u_new_lit in counter_and_u_new_lits:
         aiglib.aiger_add_and(spec, u_new_lit, 1, 1)

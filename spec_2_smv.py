@@ -47,8 +47,8 @@ def det_automaton_to_smv_module(automaton: Automaton, module_name: str, desc: st
     assert 'sink_state' not in automaton.states
     assert 'state' not in automaton.states
 
-    template = \
-"""MODULE {name}({signals})
+    template = """
+MODULE {name}({signals})
 VAR
   state : {{{enum_states}}};
 DEFINE
@@ -156,8 +156,8 @@ def build_spec_module(spec: PropertySpec) -> SmvModule:
 
 
 def build_counting_fairness_module(nof_fair_signals: int, name: str) -> SmvModule:
-    template = \
-"""MODULE {name}({signals})
+    template = """
+MODULE {name}({signals})
 VAR
   state : {{{enum_states}}};
 DEFINE
@@ -411,10 +411,9 @@ def compose_smv(non_spec_modules,
 
     smv += "ASSIGN"
     if has_bad_sys:
-        smv += "  next(sys_prop_bad_variable) := %s;"  % ' | '.join(['sys_prop_%s.bad' % m.name
-                                                                     for m in filter(lambda m: m.has_bad, grnt_modules)])
+        smv += "  next(sys_prop_bad_variable) := %s;" % ' | '.join(['sys_prop_%s.bad' % m.name
+                                                                    for m in filter(lambda m: m.has_bad, grnt_modules)])
         smv += "  init(sys_prop_bad_variable) := FALSE;"
-
 
     if has_bad_env:
         smv += "  next(env_prop_constr_variable) := !(%s);" % ' | '.join('env_prop_%s.bad' % m.name
@@ -426,7 +425,7 @@ def compose_smv(non_spec_modules,
     #     smv += "  init(env_prop_fair_variable) := TRUE;"
 
     if counting_justice_module:
-        smv += "  next(sys_prop_just_variable) := sys_prop_%s.fair;"  % counting_justice_module.name
+        smv += "  next(sys_prop_just_variable) := sys_prop_%s.fair;" % counting_justice_module.name
         smv += "  init(sys_prop_just_variable) := FALSE;"
 
     return smv

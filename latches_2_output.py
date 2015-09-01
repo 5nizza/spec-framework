@@ -30,13 +30,13 @@ def main(filename):
         if m:
             ltype = m.groups()[1][0]
             if ltype == "b":
-                aiglib.aiger_add_bad(model, latch.lit, latch.name)
+                aiglib.aiger_add_bad(model, latch.next, latch.name)
             if ltype == "c":
-                aiglib.aiger_add_constraint(model, latch.lit, latch.name)
+                aiglib.aiger_add_constraint(model, latch.next, latch.name)
             if ltype == "j":
-                aiglib.aiger_add_justice(model, 1, [latch.lit], latch.name)
+                aiglib.aiger_add_justice(model, 1, [latch.next], latch.name)
             if ltype == "f":
-                aiglib.aiger_add_fairness(model, latch.lit, latch.name)
+                aiglib.aiger_add_fairness(model, latch.next, latch.name)
 
 
     res, string = aiglib.aiger_write_to_string(model,

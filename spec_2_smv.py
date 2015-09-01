@@ -374,9 +374,9 @@ def compose_smv(non_spec_modules,
 
         smv.sep()
 
-        smv += 'INVAR'
-        smv += '  !(%s)' % ' | '.join('env_prop_%s.bad' % m.name
-                                      for m in asmpt_modules)
+        # smv += 'INVAR'
+        # smv += '  !(%s)' % ' | '.join('env_prop_%s.bad' % m.name
+        #                               for m in asmpt_modules)
 
     smv += "VAR --guarantees modules"
     for m in grnt_modules:
@@ -391,12 +391,16 @@ def compose_smv(non_spec_modules,
                 counting_justice_module.name,
                 ','.join(just_signals))
 
-    has_bad = find(lambda m: m.has_bad, grnt_modules) != -1
+    has_bad_sys = find(lambda m: m.has_bad, grnt_modules) != -1
+    has_bad_env = find(lambda m: m.has_bad, asmpt_modules) != -1
 
-    if any([has_bad, counting_justice_module]):
+    if any([has_bad_sys, has_bad_env, counting_justice_module]):
         smv += "VAR"
-        if has_bad:
+        if has_bad_sys:
             smv += "  sys_prop_bad_variable: boolean;"
+
+        if has_bad_env:
+            smv += "  env_prop_constr_variable: boolean;"
 
         if counting_justice_module:
             smv += "  sys_prop_just_variable: boolean;"
@@ -406,10 +410,16 @@ def compose_smv(non_spec_modules,
         smv.sep()
 
     smv += "ASSIGN"
-    if has_bad:
+    if has_bad_sys:
         smv += "  next(sys_prop_bad_variable) := %s;"  % ' | '.join(['sys_prop_%s.bad' % m.name
                                                                      for m in filter(lambda m: m.has_bad, grnt_modules)])
         smv += "  init(sys_prop_bad_variable) := FALSE;"
+
+
+    if has_bad_env:
+        smv += "  next(env_prop_constr_variable) := !(%s);" % ' | '.join('env_prop_%s.bad' % m.name
+                                                                         for m in asmpt_modules)
+        smv += "  init(env_prop_constr_variable) := TRUE;"
 
     # if counting_fairness_module:
     #     smv += "  next(env_prop_fair_variable) := env_prop_%s.fair;"  % counting_fairness_module.name

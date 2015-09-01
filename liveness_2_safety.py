@@ -74,7 +74,6 @@ SPEC
     # assert i == '1' and o == '1'
     assert i == '2' and o == '1'
 
-    inp_reset_signal = int(out_lines[1])
     for i in filter(lambda l: l.startswith('i'), out_lines):
         i = i.split()
         if i[1] == "reset":
@@ -87,6 +86,7 @@ SPEC
     inc = (inc + 1) * 2
 
     ret, out, err = execute_shell('aigstrip | aigtoaig -a', input=out)
+    out_lines = out.splitlines()
     aag, m, i, l, o, a = out_lines[0].split()
 
     out_def_line = out_lines[int(i) + 1 + int(l)]
@@ -94,7 +94,7 @@ SPEC
 
     out_signal = int(out_def_line)
 
-    return out, inp_reset_signal, out_signal
+    return out, out_signal
 
 
 def is_negated(l):
@@ -143,7 +143,7 @@ def get_add_symbol(s_new_lit):
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
 
-    if u_new_lit in [get_new_s_lit(reset), get_new_s_lit(inc)]:
+    if u_new_lit in [strip_lit(get_new_s_lit(reset)), strip_lit(get_new_s_lit(inc))]:
         # previously input literal, it was not AND nor latch in the counter
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
@@ -177,7 +177,9 @@ def get_new_s_lit(old_lit):
         if not spec.num_fairness:
             # Here we have something like GF true -> GF just
             # so we always increment our counter
-            return 0
+            if is_negated(old_lit):
+                return 0
+            return 1
 
         # here we have GF fair -> GF just
         res = aiglib.get_aiger_symbol(spec.fairness,0)
@@ -228,7 +230,7 @@ def define_shift():   # should go before any additions to the spec
 
 
 def add_counter_to_spec(k):
-    counter_aig, inp_reset_signal, out_overflow_signal = get_counter_aig(k)
+    counter_aig, out_overflow_signal = get_counter_aig(k)
     define_shift()
     define_counter_new_lits(counter_aig)
 

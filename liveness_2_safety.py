@@ -135,11 +135,15 @@ def get_add_symbol(s_new_lit):
 
     u_new_lit = strip_lit(s_new_lit)
 
+    if u_new_lit == 0:
+        input_, latch_, and_ = get_lit_type(u_new_lit)
+        return input_ or latch_ or and_
+
     if u_new_lit in symbol_by_ulit:
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
 
-    if u_new_lit in [reset, inc]:
+    if u_new_lit in [get_new_s_lit(reset), get_new_s_lit(inc)]:
         # previously input literal, it was not AND nor latch in the counter
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
@@ -173,7 +177,7 @@ def get_new_s_lit(old_lit):
         if not spec.num_fairness:
             # Here we have something like GF true -> GF just
             # so we always increment our counter
-            return 1
+            return 0
 
         # here we have GF fair -> GF just
         res = aiglib.get_aiger_symbol(spec.fairness,0)

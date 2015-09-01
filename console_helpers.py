@@ -2,7 +2,7 @@
 Reqiures colorama package.
 """
 try:
-    from colorsma import init, Fore
+    from colorama import init, Fore
 
     init(autoreset=True)
 

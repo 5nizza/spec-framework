@@ -5,7 +5,7 @@ import re
 from tempfile import NamedTemporaryFile
 from nose.tools import assert_equal
 from python_ext import readfile, stripped
-
+from shell import execute_shell
 
 MY_DIR = os.path.dirname(os.path.realpath(__file__))
 ############################################################################
@@ -24,30 +24,6 @@ TESTS_DIRS = ["./tests/"]
 # returns 0 on success and prints the result to stdout
 TOOL = os.path.join(MY_DIR, "spec_2_aag.py")
 ############################################################################
-
-
-def execute_shell(cmd, input=''):
-    import shlex
-    import subprocess
-
-    """
-    Execute cmd, send input to stdin.
-    :return: returncode, stdout, stderr.
-    """
-
-    proc_stdin = subprocess.PIPE if input != '' and input is not None else None
-    proc_input = input if input != '' and input is not None else None
-
-    args = shlex.split(cmd)
-
-    p = subprocess.Popen(args,
-                         stdin=proc_stdin,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-
-    out, err = p.communicate(proc_input)
-
-    return p.returncode, str(out, encoding='utf-8'), str(err, encoding='utf-8')
 
 
 def get_tmp_file_name():

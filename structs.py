@@ -67,10 +67,6 @@ class SpecType(Enum):
 
 
 class PropertySpec:
-    @staticmethod
-    def init_empty():
-        return PropertySpec(None, None, None, None, None)
-
     def __init__(self,
                  desc,
                  is_positive: bool or None,

@@ -46,6 +46,7 @@ VAR
   state: 0..{k};
 IVAR
   reset: boolean;
+  inc: boolean;
 
 DEFINE
   beep := (state={k});
@@ -54,25 +55,41 @@ ASSIGN
   init(state) := 0;
   next(state) := case
                    reset: 0;
-                   TRUE:state + 1;
+                   inc: state + 1;
+                   TRUE:state;
                  esac;
 
 SPEC
   AG(!beep)  -- then we use the bad signal
 """
 
+    global reset, inc
     counter_smv = template.format(k=str(k))
 
-    ret, out, err = execute_shell('smvflatten | smvtoaig | aigmove | aigstrip | aigtoaig -a', input=counter_smv)
+    ret, out, err = execute_shell('smvflatten | smvtoaig | aigmove | aigtoaig -a', input=counter_smv)
     assert ret == 0, to_str_ret_out_err(ret, out, err)
 
     out_lines = out.splitlines()
     aag, m, i, l, o, a = out_lines[0].split()
-    assert i == '1' and o == '1'
+    # assert i == '1' and o == '1'
+    assert i == '2' and o == '1'
 
     inp_reset_signal = int(out_lines[1])
+    for i in filter(lambda l: l.startswith('i'), out_lines):
+        i = i.split()
+        if i[1] == "reset":
+            reset = int(i[0][1:])
 
-    out_def_line = out_lines[1 + 1 + int(l)]
+        if i[1] == "inc":
+            inc = int(i[0][1:])
+
+    reset = (reset + 1) * 2
+    inc = (inc + 1) * 2
+
+    ret, out, err = execute_shell('aigstrip | aigtoaig -a', input=out)
+    aag, m, i, l, o, a = out_lines[0].split()
+
+    out_def_line = out_lines[int(i) + 1 + int(l)]
     assert len(out_def_line.split()) == 1, out_def_line
 
     out_signal = int(out_def_line)
@@ -107,6 +124,8 @@ counter_and_u_new_lits, counter_latch_u_new_lits = None, None   # _u_ stands for
 shift = None
 out = None
 new_format = None
+reset = None
+inc = None
 #
 
 
@@ -120,13 +139,13 @@ def get_add_symbol(s_new_lit):
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
 
-    if u_new_lit == strip_lit(get_new_s_lit(2)):
+    if u_new_lit in [reset, inc]:
         # previously input literal, it was not AND nor latch in the counter
         input_, latch_, and_ = get_lit_type(u_new_lit)
         return input_ or latch_ or and_
 
     assert u_new_lit in counter_and_u_new_lits or \
-           u_new_lit in counter_latch_u_new_lits
+           u_new_lit in counter_latch_u_new_lits, "%s\n%s\n%s" % (u_new_lit, counter_and_u_new_lits, counter_latch_u_new_lits)
 
     if u_new_lit in counter_and_u_new_lits:
         aiglib.aiger_add_and(spec, u_new_lit, 1, 1)
@@ -144,8 +163,20 @@ def get_new_s_lit(old_lit):
     # 2 -> spec.justice[0].lits[0], 3 -> negate(spec.fairness.lit)
     # counter_other_lit -> counter_other_lit + shift
 
-    if strip_lit(old_lit) == 2:
+    if strip_lit(old_lit) == reset:
         res = aiglib.get_justice_lit(spec, 0, 0)
+        if is_negated(old_lit):
+            res = negate(res)
+        return res
+
+    if strip_lit(old_lit) == inc:
+        if not spec.num_fairness:
+            # Here we have something like GF true -> GF just
+            # so we always increment our counter
+            return 1
+
+        # here we have GF fair -> GF just
+        res = aiglib.get_aiger_symbol(spec.fairness,0)
         if is_negated(old_lit):
             res = negate(res)
         return res
@@ -162,7 +193,9 @@ def define_counter_new_lits(counter_aig):
     counter_latch_u_new_lits = set()
     counter_and_u_new_lits = set()
 
-    for l in counter_aig.splitlines()[2:]:  # ignore header and input
+    # print counter_aig
+
+    for l in counter_aig.splitlines()[3:]:  # ignore header and input
         tokens = l.split()
 
         if len(tokens) == 1:  # output, ignore
@@ -183,12 +216,11 @@ def define_counter_new_lits(counter_aig):
 
 def define_shift():   # should go before any additions to the spec
     global shift
-    next_lit = spec.maxvar * 2 + 2
-    # In counter_aig:
-    # 2 is taken by the only input `reset`,
-    # and 4 is the first used literal,
-    # so in the new file: 4 should have value next_lit.
-    shift = next_lit - 4
+    # two inputs: reset and inc
+    # each input is used twice (as-is and negated)
+    next_lit = spec.maxvar * 2 + 4
+    # 6 is the first literal, which is not an input
+    shift = next_lit - 6
 
 
 def add_counter_to_spec(k):
@@ -234,15 +266,31 @@ def add_counter_to_spec(k):
     # every literal gets defined above, so now goes
     aiglib.aiger_add_bad(spec, get_new_s_lit(out_overflow_signal), 'k-liveness')
 
+
+def aiger_hack_jf(spec):
+    """ 'Remove' all justice signals from spec. """
     # `remove' justice signals by setting it to True
-    aiglib.set_justice_lit(spec, 0, 0, 1)
+    # aiglib.set_justice_lit(spec, 0, 0, 1)
+
+    # aiger uses num_justice to store the length of the justice section
+    # and relies on it when printing
+    just = spec.num_justice
+    spec.num_justice = 0
+    fair = spec.num_fairness
+    spec.num_fairness = 0
+    # we return the old value, so that we can reset num_justice afterwards
+    return (just, fair)
 
 
 def write_and_die():
     global spec, out, new_format
+    (j, f) = aiger_hack_jf(spec)
     res, string = aiglib.aiger_write_to_string(spec,
                                                aiglib.aiger_ascii_mode,
                                                2147483648)
+    # maybe useful for gc?
+    spec.num_justice = j
+    spec.num_fairness = f
     assert res != 0, 'writing failure'
 
     if not new_format:
@@ -267,7 +315,7 @@ def main(spec_filename, k):
     spec = aiglib.aiger_init()
     aiglib.aiger_open_and_read_from_file(spec, spec_filename)
 
-    assert spec.num_fairness == 0, 'fairness is not supported, only single justice property'
+    assert spec.num_fairness <= 1, 'more than one fairness property is not supported yet'
 
     if spec.num_justice == 0:
         write_and_die()

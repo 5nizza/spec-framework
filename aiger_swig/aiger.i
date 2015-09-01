@@ -12,20 +12,25 @@
 %typemap(in) unsigned int *
 {
   int len = PySequence_Length($input);
-  unsigned int _tmp[len];
+  $1 = malloc(len * sizeof(unsigned));
   int i;
   for(i = 0; i < len; i++)
   {
     PyObject *o = PySequence_GetItem($input,i);
     if (PyInt_Check(o))
-      _tmp[i] = (unsigned) PyInt_AsLong(o);
+      $1[i] = (unsigned) PyInt_AsLong(o);
     else
     {
+      free($1);
       PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
       return NULL;
     }
+    // printf("%d\n", _tmp[i]);
   }
-  $1 = _tmp;
+}
+%typemap(freearg) unsigned int *
+{
+  free($1);
 }
 
 %feature("autodoc", "1");
@@ -122,14 +127,12 @@ typedef int (*aiger_put) (char ch, void *client_state);
 
 /*------------------------------------------------------------------------*/
 
-enum aiger_mode
+typedef enum aiger_mode
 {
   aiger_binary_mode = 0,
   aiger_ascii_mode = 1,
   aiger_stripped_mode = 2,	/* can be ORed with one of the previous */
-};
-
-typedef enum aiger_mode aiger_mode;
+} aiger_mode;
 
 /*------------------------------------------------------------------------*/
 

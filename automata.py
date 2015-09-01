@@ -105,11 +105,6 @@ def get_nacc_trap_states(states, acc_states, edges):
     return nacc_trap_states
 
 
-def is_liveness(raw_gff: str):
-    automaton = gff_2_automaton_params(raw_gff)
-    return not automaton.is_safety()
-
-
 def gff_2_automaton_params(gff_xml: str):  # -> init, states, edges (dict (src,dst) |-> labels), acc
     # TODOopt: (boolean) simplify transitions labels
     # """

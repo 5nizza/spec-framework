@@ -1,7 +1,6 @@
 import shlex
 import subprocess
 import sys
-from console_helpers import print_red, print_green
 
 
 if sys.version_info < (3, 0):
@@ -29,7 +28,7 @@ if sys.version_info < (3, 0):
         else:
             out, err = p.communicate()
 
-            return p.returncode, out, err
+        return p.returncode, out, err
 
 else:
     def execute_shell(cmd, input=''):

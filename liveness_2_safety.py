@@ -182,7 +182,7 @@ def get_new_s_lit(old_lit):
             return 1
 
         # here we have GF fair -> GF just
-        res = aiglib.get_aiger_symbol(spec.fairness, 0)
+        res = aiglib.get_aiger_symbol(spec.fairness, 0).lit
         if is_negated(old_lit):
             res = negate(res)
         return res

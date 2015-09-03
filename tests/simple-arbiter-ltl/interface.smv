@@ -8,8 +8,8 @@ VAR --controllable
   g2: boolean;
 
 SYS_LTL_SPEC
-G (r1 --> F g1)
-G (r2 --> F g2)
-~G (g1 \/ g2)
+G (r1 -> F g1)
+G (r2 -> F g2)
+~G (g1 & g2)
 
 -- realizable

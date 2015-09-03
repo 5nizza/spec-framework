@@ -193,6 +193,26 @@ ASSIGN
     return SmvModule(name, signals, '', result, False, True)
 
 
+def build_fairness_flag_module(nof_fair_signals: int, name: str) -> SmvModule:
+    template = """
+MODULE {name} ({signals})
+VAR
+  {flags}
+ASSIGN
+  {assignments}
+DEFINE
+  {fair_def}
+"""
+
+    signals = ("in{}".format(i) for i in range(nof_fair_signals))
+    signals_str = ", ".join(signals)
+    flags = "\n  ".join(["f{} : boolean;".format(i) for i in range(nof_fair_signals)])
+    assignments = "\n  ".join(["next(f{i}) := (f{i} | in{i}) & !fair;".format(i=i) for i in range(nof_fair_signals)])
+    fair_def = "fair := {};".format(" & ".join(["(f{i} | in{i})".format(i=i) for i in range(nof_fair_signals)]))
+
+    result = template.format(name=name, assignments=assignments, signals=signals_str, flags=flags, fair_def=fair_def)
+    return SmvModule(name, signals, '', result, False, True)
+
 # def my_build_aggregate_module(module_name,
 #                               asmpt_modules,
 #                               grnt_modules,
@@ -505,11 +525,11 @@ def main(smv_lines, base_dir):
     nof_sys_live_modules = len(list(filter(lambda m: m.has_fair, grnt_modules)))
     nof_env_live_modules = len(list(filter(lambda m: m.has_fair, asmpt_modules)))
     if nof_sys_live_modules:
-        counting_justice_module = build_counting_fairness_module(nof_sys_live_modules,
-                                                                 'counting_justice_' + name)
+        counting_justice_module = build_fairness_flag_module(nof_sys_live_modules,
+                                                             'counting_justice_' + name)
     if nof_env_live_modules:
-        counting_fairness_module = build_counting_fairness_module(nof_env_live_modules,
-                                                                  'counting_fairness_' + name)
+        counting_fairness_module = build_fairness_flag_module(nof_env_live_modules,
+                                                              'counting_fairness_' + name)
 
     # for m in asmpt_modules + grnt_modules:
     #     assert set(m.module_inputs).issubset(signals_and_macros)

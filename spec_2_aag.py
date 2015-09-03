@@ -49,17 +49,20 @@ def rename(l, outputs) -> str:
         return l
 
 
-def main(smv_spec_file_name):
+def main(args):
     logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
+    smv_spec_file_name = args.file.name
+    verbosity = '-{}'.format("".join('v' for i in range(args.verbose))) if args.verbose else ''
     latches_2_output_path = scripts_dir + '/latches_2_output.py'
     logger.debug('calling to %s' % spec_2_smv_path)
 
     # i could not fix the problem with unicode encodings when using execute_shell (with separate checks of exit statuses),
     # so use piping here instead
-    aig = str(subprocess.check_output('{spec_2_smv} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {latches_2_output}'
+    aig = str(subprocess.check_output('{spec_2_smv} {verbosity} {spec_file} | smvflatten | smvtoaig | aigtoaig -a | {latches_2_output}'
                                       .format(spec_2_smv=spec_2_smv_path,
+                                              verbosity=verbosity,
                                               spec_file=smv_spec_file_name,
                                               latches_2_output=latches_2_output_path),
                                       shell=True),
@@ -93,9 +96,10 @@ if __name__ == "__main__":
                                                  'from the SYNT SMV format '
                                                  'into the SYNT AIGER format!')
 
+    parser.add_argument('-v', '--verbose', action='count')
     parser.add_argument('file', metavar='file',
                         type=argparse.FileType(),
                         help='input smv spec file')
 
     args = parser.parse_args()
-    exit(main(args.file.name))
+    exit(main(args))

@@ -92,54 +92,6 @@ ASSIGN
                      len(automaton.dead_states) > 0,
                      not automaton.is_safety)
 
-# def workaround_accept_init(never_str):
-#     """
-#     Handle the special case of an accepting initial state.
-#       accept_init:
-#       s0_init:
-#     """
-#     lines = never_str.splitlines()
-#     index = find(lambda l: l.strip() == 'accept_init:', lines)
-#     if index < 0:
-#         return never_str
-#
-#     lines.pop(index)
-#
-#     line_with_init_state = lines[find(lambda l: 'init' in l, lines)]
-#     tokens = line_with_init_state.split()
-#     init_state = tokens[find(lambda t: 'init' in t, tokens)].strip(':').strip()
-#
-#     new_never_str = '\n'.join(lines)
-#     new_never_str = new_never_str.replace(init_state, 'accept_init')
-#
-#     return new_never_str
-
-
-# def gff_2_never(gff_str):
-#     gff_tmp_file_name = never_file_name = None
-#     try:
-#         gff_tmp_file_name = get_tmp_file_name()
-#         with open(gff_tmp_file_name, 'w') as f:
-#             f.write(gff_str)
-#
-#         never_file_name = get_tmp_file_name()
-#         goal_script = '$f = load -c GFF %s; save $f -c PROMELA %s;' % (gff_tmp_file_name, never_file_name)
-#         execute_goal_script(goal_script)
-#
-#         never_str = readfile(never_file_name)
-#
-#     finally:
-#         for n in [gff_tmp_file_name, never_file_name]:
-#             if n:
-#                 os.remove(n)
-#
-#     never_str = workaround_accept_init(never_str)
-#
-#     return never_str
-# # from unittest import TestCase
-# # class Test(TestCase):
-# #     def test_(self):
-# #         print(gff_2_never('<?xml version="1.0" encoding="UTF-8" standalone="no"?> <Structure label-on="Transition" type="FiniteStateAutomaton">     <Name/>     <Description/>     <Formula/>     <Alphabet type="Propositional">         <Proposition>init</Proposition>         <Proposition>read</Proposition>         <Proposition>readA</Proposition>         <Proposition>readB</Proposition>         <Proposition>valueT</Proposition>         <Proposition>write</Proposition>         <Proposition>writeA</Proposition>         <Proposition>writeB</Proposition>         <Proposition>writtenA</Proposition>         <Proposition>writtenB</Proposition>     </Alphabet>     <StateSet>         <State sid="11">             <Y>100</Y>             <X>380</X>             <Properties/>         </State>         <State sid="12">             <Y>100</Y>             <X>240</X>             <Properties/>         </State>         <State sid="15">             <Y>200</Y>             <X>140</X>             <Properties/>         </State>         <State sid="17">             <Y>300</Y>             <X>240</X>             <Properties/>         </State>         <State sid="19">             <Y>300</Y>             <X>380</X>             <Properties/>         </State>     </StateSet>     <InitialStateSet>         <StateID>15</StateID>     </InitialStateSet>     <TransitionSet complete="false">         <Transition tid="0">             <From>11</From>             <To>11</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="1">             <From>12</From>             <To>12</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="3">             <From>12</From>             <To>11</To>             <Label>readB</Label>             <Properties/>         </Transition>         <Transition tid="5">             <From>15</From>             <To>12</To>             <Label>writtenA</Label>             <Properties/>         </Transition>         <Transition tid="6">             <From>15</From>             <To>15</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="8">             <From>17</From>             <To>17</To>             <Label>~writtenA ~writtenB</Label>             <Properties/>         </Transition>         <Transition tid="10">             <From>15</From>             <To>17</To>             <Label>writtenB</Label>             <Properties/>         </Transition>         <Transition tid="13">             <From>19</From>             <To>19</To>             <Label>True</Label>             <Properties/>         </Transition>         <Transition tid="14">             <From>17</From>             <To>19</To>             <Label>readA</Label>             <Properties/>         </Transition>     </TransitionSet>     <Acc type="Buchi">         <StateID>11</StateID>         <StateID>19</StateID>     </Acc>     <Properties/> </Structure> '))
 
 def generate_name_for_property_module(spec: PropertySpec) -> str:
     res = 'module_%s' % re.sub('\W', '_', spec.desc)
@@ -193,156 +145,25 @@ ASSIGN
     return SmvModule(name, signals, '', result, False, True)
 
 
-# def my_build_aggregate_module(module_name,
-#                               asmpt_modules,
-#                               grnt_modules,
-#                               orig_clean_module:str,
-#                               out:StrAwareList) -> (list, list, list):
-#     module = StrAwareList()
-#     module += orig_clean_module
-#     module.sep()
-#
-#     if asmpt_modules:
-#         module += "VAR --invariant modules"
-#         for m in asmpt_modules:
-#             assert set(m.module_inputs).issubset(signals_and_macros)
-#             module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-#         module.sep()
-#
-#     module += "VAR --spec modules"
-#     for m in grnt_modules:
-#         assert set(m.module_inputs).issubset(signals_and_macros)
-#         module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-#         assert m.has_bad or m.has_fair, str(m)
-#
-#     module += "VAR --module that turns many liveness signals into the single one"
-#     if counting_fairness_module:
-#         fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
-#         module += '  sys_prop_%s : %s(%s);' % \
-#                   (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
-#
-#     module.sep()
-#
-#     # assumptions
-#     inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
-#                                   for m in env_modules)
-#     if introduce_signals_instead_of_sections:
-#         module += "DEFINE"
-#         module += '  {inv_signal_name} := ({inv_violated_def});'.format(
-#             inv_signal_name=INVAR_SIGNAL_NAME,
-#             inv_violated_def=inv_violated_def)
-#     else:
-#         module += "INVAR"
-#         module += '  !(%s)' % inv_violated_def
-#     module.sep()
-#
-#     # safety
-#     bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-#                                   for m in filter(lambda m: m.has_bad, sys_modules))
-#     if introduce_signals_instead_of_sections:
-#         module += 'DEFINE'
-#         module += '  {bad_signal_name} := {bad_def};'.format(
-#             bad_signal_name=BAD_SIGNAL_NAME,
-#             bad_def=bad_def)
-#     else:
-#         if find(lambda m: m.has_bad, sys_modules) != -1:
-#             module += "SPEC"
-#             module += '  AG !(%s)' % bad_def
-#             module.sep()
-#
-#     # liveness
-#     if counting_fairness_module:
-#         if introduce_signals_instead_of_sections:
-#             module += "DEFINE"
-#             module += '  {just_sig_name} := {just_sig_def};'.format(
-#                 just_sig_name=JUSTICE_SIGNAL_NAME,
-#                 just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
-#         else:
-#             module += "FAIRNESS"
-#             module += '  sys_prop_%s.fair' % counting_fairness_module.name
-#
-#         module.sep()
-#
-#     return module
+def build_fairness_flag_module(nof_fair_signals: int, name: str) -> SmvModule:
+    template = """
+MODULE {name} ({signals})
+VAR
+  {flags}
+ASSIGN
+  {assignments}
+DEFINE
+  {fair_def}
+"""
 
+    signals = ("in{}".format(i) for i in range(nof_fair_signals))
+    signals_str = ", ".join(signals)
+    flags = "\n  ".join(["f{} : boolean;".format(i) for i in range(nof_fair_signals)])
+    assignments = "\n  ".join(["next(f{i}) := (f{i} | in{i}) & !fair;".format(i=i) for i in range(nof_fair_signals)])
+    fair_def = "fair := {};".format(" & ".join(["(f{i} | in{i})".format(i=i) for i in range(nof_fair_signals)]))
 
-# def build_aggregate_module(orig_clean_module:SmvModule,
-#                            asmpt_modules,
-#                            grnt_modules,
-#                            signals_and_macros,
-#                            counting_fairness_module:SmvModule,
-#                            introduce_signals_instead_of_sections:bool) -> SmvModule:
-#     """
-#     :return: names for
-#     (env_fall_out, env_bad, env_fair),
-#     (sys_fall_out, sys_bad, sys_fair),
-#     """
-#     module = StrAwareList()
-#     module += orig_clean_module
-#     module.sep()
-#
-#     if asmpt_modules:
-#         module += "VAR --invariant modules"
-#         for m in asmpt_modules:
-#             assert set(m.module_inputs).issubset(signals_and_macros)
-#             module += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-#         module.sep()
-#
-#     module += "VAR --spec modules"
-#     for m in grnt_modules:
-#         assert set(m.module_inputs).issubset(signals_and_macros)
-#         module += '  sys_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-#         assert m.has_bad or m.has_fair, str(m)
-#
-#     module += "VAR --module that turns many liveness signals into the single one"
-#     if counting_fairness_module:
-#         fair_signals = ['sys_prop_%s.fair'%m.name for m in filter(lambda m: m.has_fair, sys_modules)]
-#         module += '  sys_prop_%s : %s(%s);' % \
-#                   (counting_fairness_module.name, counting_fairness_module.name, ','.join(fair_signals))
-#
-#     module.sep()
-#
-#     # assumptions
-#     inv_violated_def = ' | '.join('env_prop_%s.fall_out' % m.name
-#                                   for m in env_modules)
-#     if introduce_signals_instead_of_sections:
-#         module += "DEFINE"
-#         module += '  {inv_signal_name} := ({inv_violated_def});'.format(
-#             inv_signal_name=INVAR_SIGNAL_NAME,
-#             inv_violated_def=inv_violated_def)
-#     else:
-#         module += "INVAR"
-#         module += '  !(%s)' % inv_violated_def
-#     module.sep()
-#
-#     # safety
-#     bad_def = '(%s)' % ' | '.join('sys_prop_%s.bad' % m.name
-#                                   for m in filter(lambda m: m.has_bad, sys_modules))
-#     if introduce_signals_instead_of_sections:
-#         module += 'DEFINE'
-#         module += '  {bad_signal_name} := {bad_def};'.format(
-#             bad_signal_name=BAD_SIGNAL_NAME,
-#             bad_def=bad_def)
-#     else:
-#         if find(lambda m: m.has_bad, sys_modules) != -1:
-#             module += "SPEC"
-#             module += '  AG !(%s)' % bad_def
-#             module.sep()
-#
-#     # liveness
-#     if counting_fairness_module:
-#         if introduce_signals_instead_of_sections:
-#             module += "DEFINE"
-#             module += '  {just_sig_name} := {just_sig_def};'.format(
-#                 just_sig_name=JUSTICE_SIGNAL_NAME,
-#                 just_sig_def='sys_prop_%s.fair' % counting_fairness_module.name)
-#         else:
-#             module += "FAIRNESS"
-#             module += '  sys_prop_%s.fair' % counting_fairness_module.name
-#
-#         module.sep()
-#
-#     return module
+    result = template.format(name=name, assignments=assignments, signals=signals_str, flags=flags, fair_def=fair_def)
+    return SmvModule(name, signals, '', result, False, True)
 
 
 def compose_smv(non_spec_modules,
@@ -374,7 +195,6 @@ def compose_smv(non_spec_modules,
         smv += "VAR --assumptions modules"
         for m in asmpt_modules:
             smv += '  env_prop_%s : %s(%s);' % (m.name, m.name, ','.join(m.module_inputs))
-            # assert (not m.has_fair) and m.has_bad, str(m) + '\n Assumptions must be safety'
 
         if counting_fairness_module:
             fair_signals = ['env_prop_%s.fair' % m.name
@@ -439,50 +259,6 @@ def compose_smv(non_spec_modules,
     return smv
 
 
-# def my_main(smv_lines, base_dir):
-#     module_a_g_by_name = parse_smv(smv_lines, base_dir)
-#
-#     aggregate_modules = list()
-#     final_smv = StrAwareList()
-#     fall_bad_fair_by_module = dict()
-#
-#     asmpt_bad_signals = list()
-#
-#     asmpt_fair_signals = list()
-#     grnt_bad_signals = list()
-#     grnt_fair_signals = list()
-#
-#     for name, (clean_module, assumptions, guarantees) in module_a_g_by_name.items():
-#         asmpt_modules = [build_spec_module(a, a.signals + a.macros_signals)
-#                          for a in assumptions]
-#
-#         asmpt_bad_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
-#         asmpt_fair_signals.extend(filter(lambda m: m.has_bad, asmpt_modules))
-#
-#         grnt_modules = [build_spec_module(g, g.signals + g.macros_signals)
-#                         for g in guarantees]
-#
-#         fall_bad_fair_by_module[name] = my_build_aggregate_module(name,
-#                                                                   asmpt_modules,
-#                                                                   grnt_modules,
-#                                                                   clean_module,
-#                                                                   final_smv)
-#
-#     modules_with_assumptions = tuple(filter(lambda m: m.has_assumptions, aggregate_modules))
-#     modules_with_guarantees = tuple(filter(lambda m: m.has_bad or m.has_fair, aggregate_modules))
-#     main_counting_fairness = len(tuple(filter(lambda m: m.has_fair, aggregate_modules)))
-#     main_module = build_aggregate_module('main',
-#                                          modules_with_assumptions, modules_with_guarantees,
-#                                          orig_main_module,
-#                                          main_counting_fairness,
-#                                          False)
-#
-#     final_smv += main_module.module_str
-#     print(final_smv.str())
-#
-#     return 0
-
-
 def main(smv_lines, base_dir):
     module_a_g_by_name = parse_smv(smv_lines, base_dir)
 
@@ -505,11 +281,11 @@ def main(smv_lines, base_dir):
     nof_sys_live_modules = len(list(filter(lambda m: m.has_fair, grnt_modules)))
     nof_env_live_modules = len(list(filter(lambda m: m.has_fair, asmpt_modules)))
     if nof_sys_live_modules:
-        counting_justice_module = build_counting_fairness_module(nof_sys_live_modules,
-                                                                 'counting_justice_' + name)
+        counting_justice_module = build_fairness_flag_module(nof_sys_live_modules,
+                                                             'counting_justice_' + name)
     if nof_env_live_modules:
-        counting_fairness_module = build_counting_fairness_module(nof_env_live_modules,
-                                                                  'counting_fairness_' + name)
+        counting_fairness_module = build_fairness_flag_module(nof_env_live_modules,
+                                                              'counting_fairness_' + name)
 
     # for m in asmpt_modules + grnt_modules:
     #     assert set(m.module_inputs).issubset(signals_and_macros)
@@ -529,13 +305,14 @@ def main(smv_lines, base_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transforms spec SMV into valid SMV')
 
+    parser.add_argument('-v', '--verbose', action='count', help='verbose output', default=-1)
     parser.add_argument('smv', metavar='smv',
                         type=argparse.FileType(),
                         help='input SMV file')
 
     args = parser.parse_args()
 
-    logger = setup_logging(__name__, verbose_level=1)
+    logger = setup_logging(__name__, verbose_level=args.verbose)
     logger.info("run with args:%s", args)
 
     exit(main(args.smv.read().splitlines(),

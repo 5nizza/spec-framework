@@ -1,0 +1,31 @@
+MODULE main
+VAR
+  r1: boolean;
+  r2: boolean;
+
+VAR --controllable
+  g1: boolean;
+  g2: boolean;
+
+ENV_LTL_SPEC
+!r1
+!r2
+
+G((r1&!g1 -> X r1) & (!r1&g1 -> X!r1))
+G((r2&!g2 -> X r2) & (!r2&g2 -> X!r2))
+
+GF(!r1|!g1)
+GF(!r2|!g2)
+
+SYS_LTL_SPEC
+!g1
+!g2
+G((!r1&!g1 -> X!g1) & (r1&g1 -> X g1))
+G((!r2&!g2 -> X!g2) & (r2&g2 -> X g2))
+
+GF((r1&g1) | (!r1&!g1))
+GF((r2&g2) | (!r2&!g2))
+
+G!(g1 & g2)
+
+--realizable

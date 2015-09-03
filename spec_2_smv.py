@@ -305,13 +305,14 @@ def main(smv_lines, base_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Transforms spec SMV into valid SMV')
 
+    parser.add_argument('-v', '--verbose', action='count', help='verbose output', default=-1)
     parser.add_argument('smv', metavar='smv',
                         type=argparse.FileType(),
                         help='input SMV file')
 
     args = parser.parse_args()
 
-    logger = setup_logging(__name__, verbose_level=1)
+    logger = setup_logging(__name__, verbose_level=args.verbose)
     logger.info("run with args:%s", args)
 
     exit(main(args.smv.read().splitlines(),

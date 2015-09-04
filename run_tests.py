@@ -100,6 +100,7 @@ def main(synthesize):
     assert tests, 'no tests found'
 
     for t in tests:
+        t = os.path.abspath(t)
         print('converting:\n' + TOOL + ' ' + t)
         aag_spec = convert_and_check(t)
         if synthesize:

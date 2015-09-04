@@ -320,6 +320,8 @@ if __name__ == "__main__":
                   os.path.dirname(args.smv.name)))
     except KeyboardInterrupt:
         print() # empty line, so that command line prompt is on a new one
+    except SystemExit:
+        pass
     except BaseException as e:
         from logging import INFO
         # print exception in an appropriate format

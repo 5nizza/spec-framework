@@ -4,7 +4,7 @@ from xml.etree import ElementTree
 
 from common import reduces_to_true
 from goal_utils import get_tmp_file_name, execute_goal_script, execute_translation, strip_unused_symbols
-from python_ext import readfile
+from python_ext import readfile, stripped
 from siregex import to_regex, regex_to_proposition
 from structs import Automaton, SpecType, PropertySpec
 
@@ -37,7 +37,7 @@ save $res {output_file_name2};
            output_file_name=output_file_name,
            output_file_name2=output_file_name2)
     # when complement is false, then empty line -> remove it
-    goal_script = '\n'.join(s for s in goal_script.split('\n') if s)
+    goal_script = '\n'.join(stripped(goal_script.splitlines()))
 
     execute_goal_script(goal_script)
 

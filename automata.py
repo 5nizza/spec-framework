@@ -142,7 +142,7 @@ def pltl_2_automaton_gff(ltl: str) -> str:
 
 
 def check_correct_ore(omega_regex: str):
-    match = search("not_", omega_regex)
+    match = search("[\W]not_", omega_regex)
     assert not match, "\"%s\" contains illegal sequence 'not_'" % omega_regex
     match = search("_and_", omega_regex)
     assert not match, "\"%s\" contains illegal sequence '_and_'" % omega_regex

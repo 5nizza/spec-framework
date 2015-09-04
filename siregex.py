@@ -6,7 +6,7 @@ def to_regex(siregex: str) -> str:
     """
     Transforms a signal regex into an ordinary regex understood by GOAL.
     """
-    regex = sub("[!~]", "not_", siregex)
+    regex = sub("([\W])[!~]", "\\1not_", siregex)
     regex = sub(",", "_and_", regex)
     return regex
 
@@ -15,13 +15,13 @@ def from_regex(regex: str) -> str:
     """
     Transforms a modified GOAL regex back into signal regex.
     """
-    siregex = sub("not_", "~", regex)
+    siregex = sub("([\W])not_", "\\1~", regex)
     siregex = sub("_and_", ",", siregex)
     return siregex
 
 
 def regex_to_proposition(regex: str) -> str:
-    return sub("not_", "~", sub("_and_", " ", regex))
+    return sub("([\W])not_", "\\1~", sub("_and_", " ", regex))
 
 
 if __name__ == "__main__":

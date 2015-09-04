@@ -315,5 +315,13 @@ if __name__ == "__main__":
     logger = setup_logging(__name__, verbose_level=args.verbose)
     logger.info("run with args:%s", args)
 
-    exit(main(args.smv.read().splitlines(),
-              os.path.dirname(args.smv.name)))
+    try:
+        exit(main(args.smv.read().splitlines(),
+                  os.path.dirname(args.smv.name)))
+    except KeyboardInterrupt:
+        print() # empty line, so that command line prompt is on a new one
+    except BaseException as e:
+        from logging import INFO
+        # print exception in an appropriate format
+        logger.setLevel(INFO)
+        logger.exception(e)

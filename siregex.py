@@ -1,13 +1,19 @@
 #! /usr/bin/env python3
-from re import sub
+from re import compile
+
+
+re_not = compile("([\W])[!~]")
+re_and = compile(",")
+sire_not = compile("([\W])not_")
+sire_and = compile("_and_")
 
 
 def to_regex(siregex: str) -> str:
     """
     Transforms a signal regex into an ordinary regex understood by GOAL.
     """
-    regex = sub("([\W])[!~]", "\\1not_", siregex)
-    regex = sub(",", "_and_", regex)
+    regex = re_not.sub("\\1not_", siregex)
+    regex = re_and.sub("_and_", regex)
     return regex
 
 
@@ -15,13 +21,13 @@ def from_regex(regex: str) -> str:
     """
     Transforms a modified GOAL regex back into signal regex.
     """
-    siregex = sub("([\W])not_", "\\1~", regex)
-    siregex = sub("_and_", ",", siregex)
+    siregex = sire_and.sub(",", regex)
+    siregex = sire_not.sub("\\1~", siregex)
     return siregex
 
 
 def regex_to_proposition(regex: str) -> str:
-    return sub("([\W])not_", "\\1~", sub("_and_", " ", regex))
+    return sire_not.sub("\\1~", sire_and.sub(" ", regex))
 
 
 if __name__ == "__main__":

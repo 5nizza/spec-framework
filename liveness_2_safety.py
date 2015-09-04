@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 import argparse
+from inspect import cleandoc
 import subprocess
 import sys
 import aiger_swig.aiger_wrap as aiglib
@@ -41,32 +42,32 @@ def to_str_ret_out_err(ret, out, err):
 def get_counter_aig(k):  # -> (int,int,int)
     template = \
         """
-MODULE main  -- count-up till k
-VAR
-  state: 0..{k};
-IVAR
-  reset: boolean;
-  inc: boolean;
+        MODULE main  -- count-up till k
+          VAR
+            state: 0..{k};
+          IVAR
+            reset: boolean;
+            inc: boolean;
 
-DEFINE
-  beep := (state={k});
+          DEFINE
+            beep := (state={k});
 
-ASSIGN
-  init(state) := 0;
-  next(state) := case
-                   reset: 0;
-                   inc: state + 1;
-                   TRUE:state;
-                 esac;
+          ASSIGN
+            init(state) := 0;
+            next(state) := case
+                             reset: 0;
+                             inc: state + 1;
+                             TRUE:state;
+                           esac;
 
-SPEC
-  AG(!beep)  -- then we use the bad signal
-"""
+          SPEC
+            AG(!beep)  -- then we use the bad signal
+        """
 
     global reset, inc
-    counter_smv = template.format(k=str(k))
+    counter_smv = cleandoc(template).format(k=str(k))
 
-    ret, out, err = execute_shell('smvflatten | smvtoaig | aigmove | aigtoaig -a', input=counter_smv)
+    ret, out, err = execute_shell('smvflatten | smvtoaig | aigmove | aigtoaig -a', input=counter_smv + "\n")
     assert ret == 0, to_str_ret_out_err(ret, out, err)
 
     out_lines = out.splitlines()

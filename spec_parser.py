@@ -63,9 +63,9 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
             if not now_parsing:
                 lines_without_spec.append(l_raw)
             else:
-                match = re.fullmatch("(--| )*#(name|desc):? +([\w_]+).*", l)
+                match = re.fullmatch("(?:--| )*#(?:name|desc):? +([\w_]+).*", l)
                 if match:
-                    desc = match.groups()[2]
+                    desc = match.groups()[0]
             continue
 
         if is_section_declaration(l):
@@ -76,9 +76,9 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
 
             elif 'MODULE' in l:
                 # simple parser: assumes all inputs on the same line:
-                match = re.fullmatch('MODULE *([\w_@\.]+) *(\([\w_@\. ,]*\))? *(--.*)*', l)
+                match = re.fullmatch('MODULE *([\w_@\.]+) *(\([\w_@\. ,]*\))? *(?:--.*)*', l)
                 assert match, 'unknown format\n' + l
-                assert len(match.groups()) == 3, 'unknown format\n' + l
+                assert len(match.groups()) == 2, 'unknown format\n' + l
                 module_name = match.groups()[0]
                 inputs_token = match.groups()[1]
                 module_inputs = re.findall('[\w_\.@]+', inputs_token or '')

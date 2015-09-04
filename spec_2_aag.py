@@ -49,12 +49,11 @@ def rename(l, outputs) -> str:
         return l
 
 
-def main(args):
+def main(smv_spec_file_name, verbose_level):
     logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
-    smv_spec_file_name = args.file.name
-    verbosity = '-{}'.format("".join('v' for i in range(args.verbose))) if args.verbose else ''
+    verbosity = '-{}'.format("".join('v' for i in range(verbose_level))) if verbose_level else ''
     latches_2_output_path = scripts_dir + '/latches_2_output.py'
     logger.debug('calling to %s' % spec_2_smv_path)
 
@@ -102,4 +101,4 @@ if __name__ == "__main__":
                         help='input smv spec file')
 
     args = parser.parse_args()
-    exit(main(args))
+    exit(main(args.file.name, args.verbose))

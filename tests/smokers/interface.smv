@@ -1,0 +1,51 @@
+MODULE main
+
+  VAR --controllable
+    tobacco: boolean;
+    paper: boolean;
+    match: boolean;
+
+  VAR
+    t_smoking: boolean;
+    p_smoking: boolean;
+    m_smoking: boolean;
+    
+  SYS_LTL_SPEC
+
+  -- ensure, that everyone can keep smoking
+  GF t_smoking
+  GF p_smoking
+  GF m_smoking
+
+  -- no two persons may smoke at the same time
+  G(!(t_smoking && p_smoking))
+  G(!(t_smoking && m_smoking))
+  G(!(p_smoking && m_smoking))
+
+  -- people, who are smoking don't provide ressources
+  G(t_smoking --> !tobacco)
+  G(p_smoking --> !paper)
+  G(m_smoking --> !match)
+
+  -- wait until someone's smoking
+  G(tobacco --> tobacco U (t_smoking || p_smoking || m_smoking))
+  G(paper --> paper U (t_smoking || p_smoking || m_smoking))
+  G(match --> match U (t_smoking || p_smoking || m_smoking))
+
+  ENV_PLTL_SPEC
+
+  -- one starts to smoke when all materials are prepared
+  G((tobacco && match && paper) <--> X ((t_smoking || p_smoking || m_smoking) U !(t_smoking || p_smoking || m_smoking)))
+
+  -- the one to provide the last indigredient starts smoking
+  G(t_smoking --> Y(tobacco && match && paper && Y !tobacco)))
+  G(p_smoking --> Y(tobacco && match && paper && Y !paper)))
+  G(m_smoking --> Y(tobacco && match && paper && Y !match)))
+
+  -- every cigarette burns down sometime
+  G(t_smoking --> F !t_smoking)
+  G(p_smoking --> F !p_smoking)
+  G(m_smoking --> F !m_smoking)
+
+  -- realizable
+

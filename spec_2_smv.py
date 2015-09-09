@@ -285,6 +285,12 @@ def main(smv_lines, base_dir):
 
     name, (clean_main_module, assumptions, guarantees) = name_d_a_g_records[0]
 
+    # implicitly rename main module for spec_2_aag, but keep old name as a comment
+    if name != 'main' and not 'main' in module_a_g_by_name:
+        head = clean_main_module.module_str.splitlines()[0]
+        head = re.sub("(MODULE )\w+(.*)", "\\1main\\2 -- {}\n".format(name), head)
+        clean_main_module.module_str = head + '\n'.join(clean_main_module.module_str.splitlines()[1:])
+
     asmpt_modules = list(map(build_spec_module, assumptions))
     grnt_modules = list(map(build_spec_module, guarantees))
 

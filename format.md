@@ -83,7 +83,7 @@ G(A -> B)
 `{.}`
 
 ### Short format examples
-If you want more than toy examples, then looking at the `tests` directory would be a wise idea.
+If you want more than toy examples, then looking at the `tests` directory would be a wise idea. Note, that even though we use meaningful names in our examples, you should use `main` for the module with the controllable input, unless you can be sure, that it will be recognized as the main module by our tool and thus be renamed as specified in [Semantic Sugar](#sugar). See [Limitations](#limitations) for the reason why.
 
     MODULE arbiter
       VAR
@@ -105,19 +105,40 @@ If you want more than toy examples, then looking at the `tests` directory would 
     MODULE alarm_clock
       VAR
         set: boolean;
-        beep: boolean;
         snooze: boolean;
 
-	  SYS_LTL_SPEC
+      VAR --controllable
+        beep: boolean;
+
+      SYS_LTL_SPEC
         G(set -> X (beep U snooze))
-	    G(snooze -> !beep)
+        G(snooze -> !beep)
 
       ENV_LTL_SPEC
         G(snooze -> F !snooze)
 
-Limitations
------------
+<a id='sugar'> Semantic Sugar
+-----------------------------
+In addition to the above, we provide some features to prettify the output of our tool or to "correct" user input, which would be found incorrect by one of the tools otherwise, but may be a desired form of input for the user himself.
+
+A module, which has assumptions and guarantees, but is not called `main`, will be renamed to `main`, if no other module by that name exists, for compatibility with the tools for SMV modifications (most notably `smvflatten`, see [Limitations](#limitations)). This also makes that module the main module, whether this was intended by the user or not.
+
+A module may be given a name (also called `description`) by using annotations. The following comments can be used and are equivalent:
+
+* `--#name <name>`
+* `--#desc <name>`
+* `-- #name <name>`
+* `-- #desc <name>`
+* `-- #name: <name>`
+* `-- #desc: <name>`
+
+As you can see, the hash symbol (`#`) inside a comment denotes an annotation. `<name>` stands for the name given to the module, which may consist of alphanumeric characters and underscores only. Characters after the first . Multiple uses of the same annotation will result in the latter overwriting the previous.
+
+<a id='limitations'/> Limitations
+---------------------------------
 
 * specifications are restricted to one line only
 * only one specification may be given per line
 * one module named `main` must be given (`spec_2_aag` only, because of `smvflatten`)
+* only one module (the `main` module) can have controllable variables. This is because current model checking tools can not handle scoped controllable variables and assume, that they can use *any* other symbol for defining them.
+* also, only one module (again the `main` module) can have assumptions and guarantees, since they directly rely on controllable input. If more than one module is to be given, the specification for the other therefore must be in plain SMV

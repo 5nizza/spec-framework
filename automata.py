@@ -151,13 +151,12 @@ def check_correct_ore(omega_regex: str):
 def ore_2_automaton_gff(omega_regex: str) -> str:
     check_correct_ore(omega_regex)
     w_regex = to_regex(omega_regex)
-    w_regex = sub("([Tt]rue|\.)", "True2", w_regex)
+    w_regex = sub("([\W])(?:[Tt]rue|\.)([\W])", "\\1True\\2", w_regex)
 
     result = execute_translation("ORE", w_regex, "-se -sa")
     result = sub("<Alphabet type=\"Classical\">",
                  "<Alphabet type=\"Propositional\">",
                  result)
-    result = sub("True2", "True", result)
     result = regex_to_proposition(result)
 
     return result

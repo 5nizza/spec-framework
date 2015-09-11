@@ -6,6 +6,8 @@ def readfile(file_name):
 def stripped(str_lines) -> list:
     return [l.strip() for l in str_lines if l.strip()]
 
+def stripped_e(str_lines) -> list:
+    return [l.strip() for l in str_lines]
 
 def find(lambda_func, l) -> int:
     for i, e in enumerate(l):

@@ -111,7 +111,7 @@ If you want more than toy examples, then looking at the `tests` directory would 
         beep: boolean;
 
       SYS_LTL_SPEC
-        G(set -> X (beep U snooze))
+        G(set -> X (beep W snooze))
         G(snooze -> !beep)
 
       ENV_LTL_SPEC

@@ -13,7 +13,7 @@ Specification Languages
 In addition to the above, we also allow automatons given in the GOAL File Format (GFF), which are called `GFF_SPEC` or `AUTOMATON_SPEC` internally. The filenames to these automatons shall be given one per line. Specifications given in one of the other formats are translated into automatons by the framework.
 
 ### LTL Syntax
-The LTL syntax directly corresponds to the format used in GOAL, which is taken from [the Büchi Store](http://buchi.im.ntu.edu.tw/index.php/help/qptl/). In our current format we only support LTL and PLTL, so quantifiers (`A` and `E`) are not used.
+The LTL syntax directly corresponds to the format used in GOAL, which is taken from [the Büchi Store](http://buchi.im.ntu.edu.tw/index.php/help/qptl/). In our current format we only support LTL and PLTL, so quantifiers (`A` and `E`) are not used.  
 An incomplete list of LTL operators follows:
 
     ------------------
@@ -66,20 +66,20 @@ Examples
 --------
 
 ### LTL examples
-*A implies B (in the first time step)*
+*A implies B (in the first time step)*  
 `A -> B`
 
-*A **always** implies b*
+*A **always** implies b*  
 G(A -> B)
 
-*If a, then at some point b*
+*If a, then at some point b*  
 `a -> F b`
 
 ### ω-Regex examples
-*A and not B*
+*A and not B*  
 `a,~b`
 
-*GF True*
+*GF True*  
 `{.}`
 
 ### Short format examples
@@ -89,7 +89,7 @@ If you want more than toy examples, then looking at the `tests` directory would 
       VAR
         r: boolean;
       VAR --controllable
-        g: boolean;
+        g: boolean; 
 
       SYS_LTL_SPEC
          -- all requests are granted
@@ -111,7 +111,7 @@ If you want more than toy examples, then looking at the `tests` directory would 
         beep: boolean;
 
       SYS_LTL_SPEC
-        G(set -> X (beep W snooze))
+        G(set -> X (beep U snooze))
         G(snooze -> !beep)
 
       ENV_LTL_SPEC

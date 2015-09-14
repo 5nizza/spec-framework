@@ -67,13 +67,25 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     g = parser.add_mutually_exclusive_group()
 
+    parser.add_argument("-b", "--backup", type=str, metavar="SUFFIX", help="back up original under SUFFIX, implies 'in-place'")
+    parser.add_argument("-i", "--in-place", help="edit files in place", action="store_true")
     g.add_argument("-t", "--tabs", help="use tabs instead of spaces", action="store_true")
     g.add_argument("-s", "--spaces", help="number of spaces", type=int, default=2)
-    parser.add_argument("file")
+    parser.add_argument("file", nargs="+")
 
     args = parser.parse_args()
     tabs = args.tabs
     indent_size = args.spaces
+    args.in_place |= args.backup is not None
 
-    with open(args.file) as fin:
-        print(prettify(fin.readlines()))
+    for f in args.file:
+        with open(f) as fin:
+            lines = fin.readlines()
+        if args.in_place:
+            if args.backup:
+                with open(f + "." + args.backup, "w") as b:
+                    b.write("".join(lines))
+            with open(f, "w") as fout:
+                print(prettify(lines), file=fout)
+        else:
+            print(prettify(lines))

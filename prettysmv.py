@@ -63,10 +63,17 @@ def prettify(lines):
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
+
     parser = ArgumentParser()
+    g = parser.add_mutually_exclusive_group()
+
+    g.add_argument("-t", "--tabs", help="use tabs instead of spaces", action="store_true")
+    g.add_argument("-s", "--spaces", help="number of spaces", type=int, default=2)
     parser.add_argument("file")
 
     args = parser.parse_args()
+    tabs = args.tabs
+    indent_size = args.spaces
 
     with open(args.file) as fin:
         print(prettify(fin.readlines()))

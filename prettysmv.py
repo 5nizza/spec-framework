@@ -52,7 +52,7 @@ def _prettify(stripped_lines: list):
         elif all(l.startswith("--") or not l for l in stripped_lines[i:len(stripped_lines)]):
             ret += line
         else:
-            ret += indent * cur_i + line
+            ret += (indent * cur_i + line) if line else ''
 
     return str(ret)
 

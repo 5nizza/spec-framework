@@ -53,7 +53,7 @@ def main(smv_spec_file_name, verbose_level):
     logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
-    verbosity = '-{}'.format("".join('v' for i in range(verbose_level))) if verbose_level else ''
+    verbosity = '-{}'.format('v'*verbose_level)
     latches_2_output_path = scripts_dir + '/latches_2_output.py'
     logger.debug('calling to %s' % spec_2_smv_path)
 

@@ -1,1 +1,0 @@
-run-tests ignores folders that contain `notest` file

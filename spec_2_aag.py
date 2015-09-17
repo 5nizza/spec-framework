@@ -53,7 +53,7 @@ def main(smv_spec_file_name, verbose_level):
     logger = logging.getLogger(__name__)
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     spec_2_smv_path = scripts_dir + '/spec_2_smv.py'
-    verbosity = '-{}'.format('v'*verbose_level)
+    verbosity = '-{}'.format('v'*verbose_level) if verbose_level else ''
     latches_2_output_path = scripts_dir + '/latches_2_output.py'
     logger.debug('calling to %s' % spec_2_smv_path)
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                                                  'from the SYNT SMV format '
                                                  'into the SYNT AIGER format!')
 
-    parser.add_argument('-v', '--verbose', action='count')
+    parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('file', metavar='file',
                         type=argparse.FileType(),
                         help='input smv spec file')

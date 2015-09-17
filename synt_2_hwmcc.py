@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # The HWMCC/AIGER semantics of bad traces is
 #   (inv U inv&err) | (G inv & GF just)     [1]
@@ -66,7 +66,7 @@ def _write_result(model):
 
     assert res != 0, 'writing failure'
 
-    print string
+    print(string)
 
 
 def main(filename):
@@ -148,7 +148,7 @@ if __name__ == "__main__":
                         metavar='aiger',
                         nargs='?',
                         type=str,
-                        default='/dev/stdin',  # TODOfut: Works on Linux-like only
+                        default='/dev/stdin',
                         help='model synthesized in AIGER format')
 
     args = parser.parse_args()

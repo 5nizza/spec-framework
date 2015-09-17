@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.7
+#! /usr/bin/env python3
 
 from argparse import ArgumentParser
 from re import match
@@ -44,7 +44,7 @@ def main(filename):
 
     assert res != 0, 'writing failure'
 
-    print string
+    print(string)
 
 
 if __name__ == "__main__":

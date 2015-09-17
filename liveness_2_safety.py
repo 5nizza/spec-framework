@@ -1,32 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 from inspect import cleandoc
-import subprocess
 import sys
 import aiger_swig.aiger_wrap as aiglib
-
-
-def execute_shell(cmd, input=''):
-    """
-    Execute cmd, send input to stdin.
-    Return returncode, stdout, stderr.
-    """
-
-    proc_stdin = subprocess.PIPE if input != '' and input is not None else None
-    proc_input = input if input != '' and input is not None else None
-
-    # args = shlex.split(cmd)
-
-    p = subprocess.Popen(cmd,
-                         stdin=proc_stdin,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         shell=True)
-
-    out, err = p.communicate(proc_input)
-
-    return p.returncode, out, err
+from shell import execute_shell
 
 
 def to_str_ret_out_err(ret, out, err):
@@ -286,7 +264,7 @@ def aiger_hack_jf(spec):
     fair = spec.num_fairness
     spec.num_fairness = 0
     # we return the old value, so that we can reset num_justice afterwards
-    return (just, fair)
+    return just, fair
 
 
 def write_and_die():

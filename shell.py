@@ -1,4 +1,3 @@
-import shlex
 import subprocess
 import sys
 
@@ -15,12 +14,11 @@ if sys.version_info < (3, 0):
         proc_stdin = subprocess.PIPE if input != '' else None
         proc_input = input if input != '' else None
 
-        args = shlex.split(cmd)
-
-        p = subprocess.Popen(args,
+        p = subprocess.Popen(cmd,
                              stdin=proc_stdin,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
+                             shell=True,   # so we can use piping | in cmd
                              universal_newlines=True)  # so we communicate using strings (instead of bytes)
 
         if proc_input:
@@ -41,13 +39,15 @@ else:
         proc_stdin = subprocess.PIPE if input != '' else None
         proc_input = input if input != '' else None
 
-        args = shlex.split(cmd)
-
-        p = subprocess.Popen(args,
+        p = subprocess.Popen(cmd,
                              stdin=proc_stdin,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                             stderr=subprocess.PIPE,
+                             shell=True)
 
-        out, err = p.communicate(proc_input)
+        if proc_input:
+            out, err = p.communicate(bytes(proc_input, encoding='utf-8'))
+        else:
+            out, err = p.communicate()
 
         return p.returncode, str(out, encoding='utf-8'), str(err, encoding='utf-8')

@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import copy
 from inspect import cleandoc
 import re
-from tempfile import NamedTemporaryFile
 import os
 
-import config
-from common import setup_logging, reduces_to_true
-from python_ext import readfile, stripped, find
-from shell import execute_shell
+from common import setup_logging
+from python_ext import find
 from spec_parser import parse_smv
 from str_aware_list import StrAwareList
 from structs import Automaton, PropertySpec, SmvModule
 from prettysmv import prettify
-
 from automata import automaton_from_spec
-
 
 INVAR_SIGNAL_NAME = "invar_violated_signal"
 BAD_SIGNAL_NAME = "bad_signal"
@@ -287,7 +281,7 @@ def main(smv_lines, base_dir):
     name, (clean_main_module, assumptions, guarantees) = name_d_a_g_records[0]
 
     # implicitly rename main module for spec_2_aag, but keep old name as a comment
-    if name != 'main' and not 'main' in module_a_g_by_name:
+    if name != 'main' and 'main' not in module_a_g_by_name:
         head = clean_main_module.module_str.splitlines()[0]
         head = re.sub("(MODULE )\w+(.*)", "\\1main\\2 -- {}\n".format(name), head)
         clean_main_module.module_str = head + '\n'.join(clean_main_module.module_str.splitlines()[1:])

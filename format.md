@@ -117,7 +117,7 @@ If you want more than toy examples, then looking at the `tests` directory would 
       ENV_LTL_SPEC
         G(snooze -> F !snooze)
 
-<a id='sugar'> Semantic Sugar
+<a id='sugar'/> Semantic Sugar
 -----------------------------
 In addition to the above, we provide some features to prettify the output of our tool or to "correct" user input, which would be found incorrect by one of the tools otherwise, but may be a desired form of input for the user himself.
 

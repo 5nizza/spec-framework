@@ -13,13 +13,13 @@ SYS_LTL_SPEC
 -- #name no_crash
 G(~(h && f))
 
-G((~h && X h) --> ~f)
-G((~f && X f) --> ~h)
+G((~h && X h) -> ~f)
+G((~f && X f) -> ~h)
 
 -- #name car_trigger
-G(C --> F f)
+G(C -> F f)
 -- #name pedestrian_trigger
-G(P --> F f)
+G(P -> F f)
 
 -- #name inf_often_highway
 GF h
@@ -27,15 +27,15 @@ GF h
 GF f
 
 -- #name emergency_highway
-G((Eh && X Eh) --> X h)
+G((Eh && X Eh) -> X h)
 -- #name emergency_farmroad
-G((Ef && X Ef) --> X f)
+G((Ef && X Ef) -> X f)
 
 ENV_LTL_SPEC
 G(~(Eh && Ef))
 GF(~Eh && ~Ef)
-G((Eh && X ~Eh) --> X X ~Eh)
-G((Ef && X ~Ef) --> X X ~Ef)
+G((Eh && X ~Eh) -> X X ~Eh)
+G((Ef && X ~Ef) -> X X ~Ef)
 
 -- k = 8
 -- realizable

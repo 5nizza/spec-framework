@@ -1,13 +1,11 @@
 from os import remove
 from tempfile import NamedTemporaryFile
+import logging
 
 from config import GOAL
-from common import setup_logging
 from python_ext import find, readfile, stripped
 from shell import execute_shell
-from structs import Automaton
 
-import logging
 logger = logging.getLogger(__name__)
 
 

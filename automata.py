@@ -22,10 +22,9 @@ def automaton_from_gff(gff: str, complement: bool=False) -> Automaton:
     with open(input_file_name, 'w') as f:
         f.write(gff)
 
-    complement_stmnt = '' if not complement else '$res = complement $res;'
+    complement_stmnt = '' if not complement else '\n$res = complement $res;'
     goal_script = """
-$res = load "{input_file_name}";
-{complement_stmnt}
+$res = load "{input_file_name}"; {complement_stmnt}
 $res = simplify -m fair -dse -ds -rse -rs -ru -rd $res;
 $res = determinization -m bk09 $res;
 acc -min $res;
@@ -36,8 +35,6 @@ save $res {output_file_name2};
            input_file_name=input_file_name,
            output_file_name=output_file_name,
            output_file_name2=output_file_name2)
-    # when complement is false, then empty line -> remove it
-    goal_script = '\n'.join(stripped(goal_script.splitlines()))
 
     execute_goal_script(goal_script)
 

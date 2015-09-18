@@ -1,15 +1,11 @@
-from functools import lru_cache
 import sys
 import logging
 
 from sympy import true, sympify
 from sympy.core.symbol import Symbol
 from sympy.logic.boolalg import simplify_logic, false
-from ansistrm import ColorizingStreamHandler
 
-# hacky way of fixing imports, which rely on common having Automaton
-# to be removed
-from structs import Automaton
+from ansistrm import ColorizingStreamHandler
 
 
 def setup_logging(logger_name, verbose_level: int=0, filename: str=None):

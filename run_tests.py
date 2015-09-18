@@ -62,7 +62,7 @@ def to_str_ret_out_err(rc, out, err):
     return res
 
 
-def synthesize_spec(aag_spec: str, test_name: str) -> bool:
+def synthesize_spec(aag_spec: str) -> bool:
     tmp_file_name = get_tmp_file_name() + '.aag'
     with open(tmp_file_name, 'w') as f:
         f.write(aag_spec)
@@ -105,7 +105,7 @@ def main(synthesize):
         aag_spec = convert_and_check(t)
         if synthesize:
             is_realizable_expected = is_realizable(t)
-            is_realizable_actual = synthesize_spec(aag_spec, t)
+            is_realizable_actual = synthesize_spec(aag_spec)
             assert_equal(is_realizable_expected, is_realizable_actual, 'test failed: ' + t)
         print()
 

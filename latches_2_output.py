@@ -22,10 +22,8 @@ def main(filename):
     model = aiglib.aiger_init()
     aiglib.aiger_open_and_read_from_file(model, filename)
 
-    latches = model.latches
-
     for i in range(model.num_latches):
-        latch = aiglib.get_aiger_symbol(latches, i)
+        latch = aiglib.get_ith_latch(model, i)
         m = match(regex, latch.name)
         if m:
             ltype = m.groups()[1][0]

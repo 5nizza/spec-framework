@@ -161,7 +161,7 @@ def get_new_s_lit(old_lit):
             return 1
 
         # here we have GF fair -> GF just
-        res = aiglib.get_aiger_symbol(spec.fairness, 0).lit
+        res = aiglib.get_ith_fairness(spec, 0).lit
         if is_negated(old_lit):
             res = negate(res)
         return res
@@ -252,10 +252,8 @@ def add_counter_to_spec(k):
     aiglib.aiger_add_bad(spec, get_new_s_lit(out_overflow_signal), 'k-liveness')
 
 
-def aiger_hack_jf(spec):
+def aiger_hacky_remove_jf(spec):
     """ 'Remove' all justice signals from spec. """
-    # `remove' justice signals by setting it to True
-    # aiglib.set_justice_lit(spec, 0, 0, 1)
 
     # aiger uses num_justice to store the length of the justice section
     # and relies on it when printing
@@ -269,7 +267,7 @@ def aiger_hack_jf(spec):
 
 def write_and_die():
     global spec, out, new_format
-    (j, f) = aiger_hack_jf(spec)
+    (j, f) = aiger_hacky_remove_jf(spec)
     res, string = aiglib.aiger_write_to_string(spec,
                                                aiglib.aiger_ascii_mode,
                                                2147483648)

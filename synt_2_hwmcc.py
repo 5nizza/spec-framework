@@ -87,39 +87,37 @@ def main(filename):
 
     aiglib.aiger_add_input(model, next_lit, 'SYNT_2_HWMCC_aux')
     #: :type: aiglib.aiger_symbol
-    aux = aiglib.get_aiger_symbol(model.inputs, model.num_inputs - 1)
+    aux = aiglib.aiger_is_input(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and1 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
-    # TODO: use aiger_is_and, remove this func from the interface
+    and1 = aiglib.aiger_is_and(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and2 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
+    and2 = aiglib.aiger_is_and(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and3 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
+    and3 = aiglib.aiger_is_and(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_and(model, next_lit, 1, 1)
     #: :type: aiglib.aiger_and
-    and4 = aiglib.get_aiger_and(model.ands, model.num_ands - 1)
+    and4 = aiglib.aiger_is_and(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L1')
     #: :type: aiglib.aiger_and
-    L1 = aiglib.get_aiger_symbol(model.latches, model.num_latches - 1)
-    # TODO: use aiger_is_latch, remove this from the interface
+    L1 = aiglib.aiger_is_latch(model, next_lit)
     next_lit += 2
 
     aiglib.aiger_add_latch(model, next_lit, 1, 'SYNT_2_HWMCC_L2')
     #: :type: aiglib.aiger_and
-    L2 = aiglib.get_aiger_symbol(model.latches, model.num_latches - 1)
+    L2 = aiglib.aiger_is_latch(model, next_lit)
     next_lit += 2
 
     #: :type: aiglib.aiger_symbol

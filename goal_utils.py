@@ -34,6 +34,8 @@ def execute_goal_script(script: str) -> str:
 
 def execute_translation(what: str, formula: str, options: str="") -> str:
     output_file_name = get_tmp_file_name("goal_trans_")
+    if "\"" in formula:
+        raise SyntaxError("Quotation marks are not allowed as parts of formulae.")
     template = "translate {what} {option} -o {output} \"{formula}\";"
     script = template.format(what=what, option=options, formula=formula,
                              output=output_file_name)

@@ -4,7 +4,7 @@ from xml.etree import ElementTree
 
 from common import reduces_to_true
 from goal_utils import get_tmp_file_name, execute_goal_script, execute_translation, strip_unused_symbols
-from python_ext import readfile, stripped
+from python_ext import readfile, stripped_non_empty
 from siregex import to_regex, regex_to_proposition
 from structs import Automaton, SpecType, PropertySpec
 

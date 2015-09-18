@@ -4,7 +4,7 @@ import argparse
 import re
 from tempfile import NamedTemporaryFile
 from nose.tools import assert_equal
-from python_ext import readfile, stripped
+from python_ext import readfile, stripped_non_empty
 from shell import execute_shell
 
 MY_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -32,7 +32,7 @@ def get_tmp_file_name():
 
 
 def is_realizable(test):
-    spec_status = stripped(readfile(test).splitlines())[-1]
+    spec_status = stripped_non_empty(readfile(test).splitlines())[-1]
     if re.fullmatch('-- *realizable', spec_status):
         return True
     if re.fullmatch('-- *unrealizable', spec_status):

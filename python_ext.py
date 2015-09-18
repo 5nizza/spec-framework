@@ -3,11 +3,11 @@ def readfile(file_name):
         return f.read()
 
 
-def stripped(str_lines) -> list:
+def stripped_non_empty(str_lines) -> list:
     return [l.strip() for l in str_lines if l.strip()]
 
 
-def stripped_e(str_lines) -> list:
+def stripped(str_lines) -> list:
     return [l.strip() for l in str_lines]
 
 

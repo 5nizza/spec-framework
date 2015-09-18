@@ -6,10 +6,6 @@ from re import match
 import aiger_swig.aiger_wrap as aiglib
 
 
-"""
-Tool to convert 'latches' with specific names to corresponding AIGER signals.
-"""
-
 skippable = "[A-Za-z0-9_]*"
 end = "\Z"
 string_to_match = "(just(ice)?|bad|constr(aint)?|fair)_(var(iable)?|sig(nal)?)"
@@ -46,7 +42,7 @@ def main(filename):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
+    parser = ArgumentParser(description='Convert specially named latches to corresponding AIGER signals')
 
     parser.add_argument('aiger',
                         metavar='aiger',

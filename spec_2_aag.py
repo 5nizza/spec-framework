@@ -93,7 +93,7 @@ def main(smv_spec_file_name, verbose_level):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert specification '
                                                  'from the SYNT SMV format '
-                                                 'into the SYNT AIGER format!')
+                                                 'into the SYNTCOMP format!')
 
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('file', metavar='file',

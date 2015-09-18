@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 import logging
 
 from config import GOAL
-from python_ext import find, readfile, stripped
+from python_ext import find, readfile, stripped_non_empty
 from shell import execute_shell
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ def strip_unused_symbols(gff_automaton_text: str) -> str:
         #: :type: str
         lbls = lbl_line[lbl_line.find('>') + 1:
                         lbl_line.find('<', lbl_line.find('>'))]
-        lbls = stripped(lbls.replace('~', '').split())
+        lbls = stripped_non_empty(lbls.replace('~', '').split())
         used_labels.update(lbls)
 
     # now construct the result

@@ -10,11 +10,11 @@ Specification Languages
 * PLTL (`PLTL_SPEC`)
 * (modified) ω-Regex (`OMEGA_REGEX_SPEC` or `ORE_SPEC`)
 
-In addition to the above, we also allow automatons given in the GOAL File Format (GFF), which are called `GFF_SPEC` or `AUTOMATON_SPEC` internally. The filenames to these automatons shall be given one per line. Specifications given in one of the other formats are translated into automatons by the framework.
+In addition to the above, we also allow automatons given in the GOAL File Format (GFF), which are called `GFF_SPEC` or `AUTOMATON_SPEC` internally{ak: why `or`? can we only one?}. The filenames to these automatons shall be given one per line. Specifications given in one of the other formats are translated into automatons by the framework.
 
 ### LTL Syntax
 The LTL syntax directly corresponds to the format used in GOAL, which is taken from [the Büchi Store](http://buchi.im.ntu.edu.tw/index.php/help/qptl/). In our current format we only support LTL and PLTL, so quantifiers (`A` and `E`) are not used.  
-An incomplete list of LTL operators follows:
+An incomplete list of LTL operators is:
 
     ------------------
     |  G   | Global  |
@@ -37,20 +37,44 @@ Additional operators supported in PLTL include:
     -----------------
 
 ### ω-Regex Syntax
-The ω-Regex Parser used has some restrictions, mainly that only the operators `*`, `+`, `|`, and `?` are allowed. This means, that there is **no** negation operator. As a special exception, we complement the automaton of a specification given as regular expression, that started with `!(` and ended with `)`, which should be the equivalent of negating the whole expression.
+The ω-Regex Parser used has some restrictions, mainly that only the operators `*`, `+`, `|`, and `?` are allowed. This means, that there is **no** negation operator. As a special exception, we support negating the whole expression, i.e., expressions of the form `!(<reg expression without negations>)`, and negating propositions.
 
-Coherent words are interpreted as single propositions by GOAL. This means, for instance, that `input` is a valid variable name. Inputs, which are to appear in sequence, shall be seperated by a space.
+For symbols, ω-Regex expressions use propositional alphabet (in terms of GOAL).
+This means, that every symbol represents a proposition, which can be true or false.
+E.g., to specify in your regular expression the proposition `p` is true, 
+write `p`, and write `~p` or `!p` to specify that `p` is false.
 
-By default, GOAL uses a classical alphabet for automatons translated from an ω-Regex. Depending on the specification, this might not be the behaviour wanted, especially if negated input wants to be addressed. To counter this, the symbols `!` and `~` are implicitly transformed into `not_`, which is then translated back into a negation, after the translation was finished.
+Coherent words are interpreted as single propositions by GOAL. This means, for instance, that `input` is a valid variable name. Inputs, which are to appear in sequence, shall be separated by a space.
 
-When dealing with multiple inputs, it may be required to query the status of two flags at the same time. In order to allow this, we implicitly transform `,` into `_and_` and then undo this transformation after the translation in a similar fashion to `!` and `~`.
+You can use `.` to specify `True` (aka "any values of propositions").
+Multiple uses of the dot still need to be separated by spaces, however.
 
-Because of the implicit transformations made by our tool, the strings `_and_` and `not_` are not allowed as parts of variable names, as otherwise the translation may cause unwanted behaviour. Also, `_and_` and `not_` should **not** have any whitespace between them and their corresponding variables.
+You can use `,` to specify that two propositions should hold in the same 
+time step. For example, `(.* g1,g2){.}` means that eventually `g1` and `g2`
+are true in the same time step, while `(.* g1 g2){.}` means eventually 
+`g1` is followed by `g2` in the next time step.
 
-On another note `.` is translated into `True` in order to provide some syntactic sugar similar to commonly used regular expressions. Multiple uses of the dot still need to be seperated by spaces, however.
+__Some limitations__.
+By default, GOAL uses a classical alphabet for ω-Regex, 
+while the alphabet in `spec-framework` is propositional.
+Thus, we implicitly transform `!p` and `~p` into `not_p`,
+and `a,b` into `a_and_b`,
+then call GOAL's translation algorithms, 
+and then translate the automaton with classical alphabet into an automaton 
+with propositional alphabet.
+Because of these implicit transformations, the strings `_and_` and `not_` 
+are not allowed as parts of variable names! 
+Also, `_and_` and `not_` should **not** have any whitespace between them 
+and their corresponding variables.{ak: the last sentence is not clear}
+
+{ak: not having `_and_`, `_not` in variables is dangerous restriction: 
+ 1. can we remove it?
+ 2. if not, can we assert in our tool that the user does not have such?}
+
 
 Specification Types
 -------------------
+
 `spec_2_smv` allows environment assumptions as well as system guarantees. Assumptions have to be prefixed with `ENV`, while guarantees are prefixed with `SYS`. Using these prefixes for the aforementioned language types, the following section headers are currently supported:
 
 * `SYS_AUTOMATON_SPEC` / `SYS_GFF_SPEC`
@@ -61,6 +85,9 @@ Specification Types
 * `ENV_PLTL_SPEC`
 * `SYS_OMEGA_REGEX_SPEC` / `SYS_ORE_SPEC`
 * `ENV_OMEGA_REGEX_SPEC` / `ENV_ORE_SPEC`
+
+{ak: why duplicate? can we remove duplicates?}
+
 
 Examples
 --------
@@ -117,8 +144,10 @@ If you want more than toy examples, then looking at the `tests` directory would 
       ENV_LTL_SPEC
         G(snooze -> F !snooze)
 
+
 <a id='sugar'/> Semantic Sugar
------------------------------
+------------------------------
+
 In addition to the above, we provide some features to prettify the output of our tool or to "correct" user input, which would be found incorrect by one of the tools otherwise, but may be a desired form of input for the user himself.
 
 A module, which has assumptions and guarantees, but is not called `main`, will be renamed to `main`, if no other module by that name exists, for compatibility with the tools for SMV modifications (most notably `smvflatten`, see [Limitations](#limitations)). This also makes that module the main module, whether this was intended by the user or not.
@@ -132,13 +161,26 @@ A module may be given a name (also called `description`) by using annotations. T
 * `-- #name: <name>`
 * `-- #desc: <name>`
 
+{ak: what is "giving a name to module" good for?}
+{ak: do we need so many options?}
+{ak: if we use # here -- should we use # for `--controllable`, too?}
+
+
 As you can see, the hash symbol (`#`) inside a comment denotes an annotation. `<name>` stands for the name given to the module, which may consist of alphanumeric characters and underscores only. Characters after the first . Multiple uses of the same annotation will result in the latter overwriting the previous.
+
 
 <a id='limitations'/> Limitations
 ---------------------------------
 
-* specifications are restricted to one line only
-* only one specification may be given per line
+* every property should be one line only
+* only one property can be given per line
 * one module named `main` must be given (`spec_2_aag` only, because of `smvflatten`)
-* only one module (the `main` module) can have controllable variables. This is because current model checking tools can not handle scoped controllable variables and assume, that they can use *any* other symbol for defining them.
-* also, only one module (again the `main` module) can have assumptions and guarantees, since they directly rely on controllable input. If more than one module is to be given, the specification for the other therefore must be in plain SMV
+* only one module (the `main` module) can have controllable variables. 
+  This is because current synthesis tools from SYNTCOMP 
+  do not handle synthesis with partial information
+  (i.e., scoped controllable variables).
+  Thus, every controllable signal can depend on *any* other symbol of *any* module.
+* also, only one module (again the `main` module) can have assumptions and guarantees,
+  since they directly rely on controllable input. If more than one module 
+  is to be given, then the module should be in plain SMV 
+  (without properties nor controllable signals).

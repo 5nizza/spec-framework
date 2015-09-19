@@ -289,7 +289,7 @@ const unsigned char * aiger_coi (aiger *);		/* [1..maxvar] */
  * used.  The latter returns the previously returned error message.
  */
 const char *aiger_read_from_file (aiger *, FILE *);
-const char *aiger_read_from_string (aiger *, const char *str);
+//const char *aiger_read_from_string (aiger *, const char *str);
 const char *aiger_read_generic (aiger *, void *state, aiger_get);
 
 /*------------------------------------------------------------------------*/

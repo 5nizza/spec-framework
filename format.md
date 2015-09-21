@@ -183,4 +183,4 @@ As you can see, the hash symbol (`#`) inside a comment denotes an annotation. `<
 * also, only one module (again the `main` module) can have assumptions and guarantees,
   since they directly rely on controllable input. If more than one module 
   is to be given, then the module should be in plain SMV 
-  (without properties nor controllable signals).
+  (with neither properties nor controllable signals).

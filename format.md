@@ -54,23 +54,24 @@ time step. For example, `(.* g1,g2){.}` means that eventually `g1` and `g2`
 are true in the same time step, while `(.* g1 g2){.}` means eventually 
 `g1` is followed by `g2` in the next time step.
 
-__Some limitations__.
+#### Some limitations
+
 By default, GOAL uses a classical alphabet for ω-Regex, 
-while the alphabet in `spec-framework` is propositional.
-Thus, we implicitly transform `!p` and `~p` into `not_p`,
+while the alphabet in `spec-framework` is propositional. In order to circumvent this,
+we implicitly transform `!p` and `~p` into `not_p`,
 and `a,b` into `a_and_b`,
 then call GOAL's translation algorithms, 
 and then translate the automaton with classical alphabet into an automaton 
 with propositional alphabet.
+
 Because of these implicit transformations, the strings `_and_` and `not_` 
-are not allowed as parts of variable names! 
-Also, `_and_` and `not_` should **not** have any whitespace between them 
-and their corresponding variables.{ak: the last sentence is not clear}
+are not allowed as parts of variable names and trying to use them will result
+in an assertion error.
 
-{ak: not having `_and_`, `_not` in variables is dangerous restriction: 
- 1. can we remove it?
- 2. if not, can we assert in our tool that the user does not have such?}
-
+When using these operators, there should be no whitespace between the operator
+and the variable name. While `a,~b` will for instance yield `a_and_not_b`,
+`a , ~ b` will yield bogus. Our regex transformation tool will not complain about
+bogus, but GOAL will raise an error, when trying to convert these.
 
 Specification Types
 -------------------
@@ -86,8 +87,7 @@ Specification Types
 * `SYS_OMEGA_REGEX_SPEC` / `SYS_ORE_SPEC`
 * `ENV_OMEGA_REGEX_SPEC` / `ENV_ORE_SPEC`
 
-{ak: why duplicate? can we remove duplicates?}
-
+The headers, which are listed on the same line seperated by `/` are aliases to each other and mean the same. Some of them are kept for legacy support, while others are for speeding up the writing of these specifications.
 
 Examples
 --------

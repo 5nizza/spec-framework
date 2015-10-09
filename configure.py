@@ -7,6 +7,15 @@ from console_helpers import print_green
 
 
 CONFIG_PY_NAME = 'config.py'
+CONFIG_SH_NAME = 'config.sh'
+
+CONFIG_PY_TEXT = """
+AISY = '/home/ayrat/projects/aisy/aisy.py'
+GOAL = '/home/ayrat/projects/GOAL-20141117/gc'
+"""
+CONFIG_SH_TEXT = """
+IIMC_CHECKER=/home/ayrat/projects/iimc-2.0/iimc
+"""
 
 
 def _get_root_dir() -> str:
@@ -19,23 +28,27 @@ def _user_confirmed(question:str):
     return answer in 'yY'
 
 
+def _check_files_exist(files):
+    existing = list(filter(lambda f: os.path.exists(f), files))
+    return existing
+
+
 def main():
-    text = """
-    AISY = '/home/ayrat/projects/aisy/aisy.py'
-    GOAL = '/home/ayrat/projects/GOAL-20141117/gc'
-    """
-    text = cleandoc(text)
     config_py = os.path.join(_get_root_dir(), CONFIG_PY_NAME)
-    if os.path.exists(config_py) and _user_confirmed('{config_py} already exists.\n'.format(config_py=CONFIG_PY_NAME) +
-                                                     'Replace?')\
-            or not os.path.exists(config_py):
+    existing = _check_files_exist([CONFIG_PY_NAME, CONFIG_SH_NAME])
+    if not existing or \
+            _user_confirmed('{files} already exist(s).\n'.format(files=existing) +
+                            'Replace?'):
         with open(config_py, 'w') as file:
-            file.write(text)
-            print_green('')
-            print_green('Created {config_py}.\n'
-                        'Now edit it with your paths.'.
-                        format(config_py=CONFIG_PY_NAME))
-            return True
+            file.write(CONFIG_PY_TEXT)
+        with open(CONFIG_SH_NAME, 'w') as file:
+            file.write(CONFIG_SH_TEXT)
+
+        print_green('Created {files}.\n'
+                    'Now edit them with your paths.'.
+                    format(files=[CONFIG_PY_NAME, CONFIG_SH_NAME]))
+
+        return True
 
     return False
 

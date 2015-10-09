@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-from inspect import cleandoc
 import os
 from console_helpers import print_green
 

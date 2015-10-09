@@ -14,7 +14,7 @@ Contains two conversion tools:
 2. From the SYNTCOMP with liveness guarantees format to the HWMCC format.
 
 
-# Requirements and Setup
+# Requirements
 
 - `swig`   
   in the directory `aiger_swig` run `make_swig.sh`   
@@ -33,11 +33,15 @@ Contains two conversion tools:
   Tested with version from `2014.11.17`.      
   Configure the path in `config.py`.
 
-- Modify `config.sh` and provide the path to `iimc` model checker.     
-  This is needed only if you plan to use `mc.sh` --      
-  it is a wrapper around a model checker for HWMCC format; used by `check_model.sh`,   
-  or you plan to use `check_model.sh` (a helper to verify models in the modified SYNTCOMP format).
-  IIMC model checker can be downloaded at http://ecee.colorado.edu/wpmu/iimc/
+
+# Configure
+
+Run:
+
+`./configure.py`
+
+It creates local configuration files `config.py` and `config.sh`. 
+You will be asked to edit those files.
 
 
 # Run

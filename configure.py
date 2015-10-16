@@ -34,13 +34,14 @@ def _check_files_exist(files):
 
 def main():
     config_py = os.path.join(_get_root_dir(), CONFIG_PY_NAME)
+    config_sh = os.path.join(_get_root_dir(), CONFIG_SH_NAME)
     existing = _check_files_exist([CONFIG_PY_NAME, CONFIG_SH_NAME])
     if not existing or \
             _user_confirmed('{files} already exist(s).\n'.format(files=existing) +
                             'Replace?'):
         with open(config_py, 'w') as file:
             file.write(CONFIG_PY_TEXT)
-        with open(CONFIG_SH_NAME, 'w') as file:
+        with open(config_sh, 'w') as file:
             file.write(CONFIG_SH_TEXT)
 
         print_green('Created {files}.\n'

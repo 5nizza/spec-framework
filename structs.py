@@ -56,14 +56,10 @@ class SmvModule:
 
 
 class SpecType(Enum):
-    GFF_SPEC = 1
+    AUTOMATON_SPEC = 1
     LTL_SPEC = 2
     PLTL_SPEC = 3
-    OMEGA_REGEX_SPEC = 4
-    # Aliases
-    AUTOMATON_SPEC = GFF_SPEC    # for legacy reasons
-    LTLSPEC = LTL_SPEC           # since smvtoaig does it like this
-    ORE_SPEC = OMEGA_REGEX_SPEC  # for lazy people
+    ORE_SPEC = 4
 
 
 class PropertySpec:

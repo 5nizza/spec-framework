@@ -87,7 +87,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
                 now_parsing = False
         else:
             if now_parsing:
-                if spec_type == SpecType.GFF_SPEC:
+                if spec_type == SpecType.AUTOMATON_SPEC:
                     file_name = re.fullmatch('!? *([\w_\-\.]+\.gff).*', l).groups()[0]
                     data = PropertySpec(file_name,
                                         not l.startswith('!'),
@@ -95,7 +95,7 @@ def parse_smv_module(module_lines, base_dir) -> (SmvModule, list, list):
                                         base_dir + '/' + file_name,
                                         spec_type)
 
-                elif spec_type == SpecType.OMEGA_REGEX_SPEC:
+                elif spec_type == SpecType.ORE_SPEC:
                     is_false = l.startswith("!(") and l.endswith(")")
                     data = PropertySpec(l, not is_false, is_parsing_guarantees,
                                         l if not is_false else l[2:-1], spec_type)

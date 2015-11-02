@@ -79,10 +79,10 @@ def automaton_from_spec(spec: PropertySpec) -> Automaton:
     logger.info('building automaton from spec "%s" of type %s', spec.desc, spec.type)
     logger.debug(spec)
     # TODO better spec parsing
-    get_gff = {SpecType.GFF_SPEC: readfile,
+    get_gff = {SpecType.AUTOMATON_SPEC: readfile,
                SpecType.LTL_SPEC: ltl_2_automaton_gff,
                SpecType.PLTL_SPEC: pltl_2_automaton_gff,
-               SpecType.OMEGA_REGEX_SPEC: ore_2_automaton_gff}
+               SpecType.ORE_SPEC: ore_2_automaton_gff}
 
     gff = get_gff[spec.type](spec.data)
 
